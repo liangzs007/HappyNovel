@@ -223,6 +223,10 @@ button.secondary {
   background: #f8fafc;
 }
 
+.quick-form-sites {
+  grid-template-columns: minmax(130px, 1fr) minmax(190px, 1.3fr) minmax(150px, 1fr) minmax(150px, 1fr) minmax(82px, 0.5fr) minmax(82px, 0.5fr) minmax(150px, 1fr) auto;
+}
+
 .quick-form label {
   display: grid;
   gap: 6px;

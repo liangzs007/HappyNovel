@@ -15,6 +15,7 @@ import {
   type AdminRecommendationsResult,
   type AdminSiteRow,
   type AdminTaskRow,
+  type CreateSiteRequest,
   type CreateGlossaryTermRequest,
 } from './adminApi'
 import {
@@ -74,11 +75,13 @@ function ManagementPage({
   pageKey,
   tableState,
   complianceConfigCards,
+  siteCreateForm,
   glossaryCreateForm,
 }: {
   pageKey: AdminPageKey
   tableState: RemoteTableState
   complianceConfigCards: string[]
+  siteCreateForm?: React.ReactNode
   glossaryCreateForm?: React.ReactNode
 }) {
   const page = adminPages[pageKey]
@@ -98,6 +101,7 @@ function ManagementPage({
           {complianceConfigCards.map((card) => <span key={card}>{card}</span>)}
         </div>
       ) : null}
+      {pageKey === 'sites' ? siteCreateForm : null}
       {pageKey === 'glossary' ? glossaryCreateForm : null}
       <div className="filters">
         <input placeholder="关键词搜索" />
@@ -143,6 +147,88 @@ function ManagementPage({
         </table>
       </div>
     </section>
+  )
+}
+
+function SiteQuickCreateForm({
+  isSubmitting,
+  onSubmit,
+}: {
+  isSubmitting: boolean
+  onSubmit: (request: CreateSiteRequest) => void
+}) {
+  const [form, setForm] = useState({
+    name: '',
+    baseDomain: '',
+    rateLimitPerMinute: '30',
+    maxConcurrency: '2',
+    chapterListSelector: '.chapter-list a',
+    chapterBodySelector: '.chapter-content',
+    adBlocklist: '请收藏本站,最新网址',
+  })
+
+  return (
+    <form
+      className="quick-form quick-form-sites"
+      onSubmit={(event) => {
+        event.preventDefault()
+        onSubmit({
+          name: form.name,
+          baseDomain: form.baseDomain,
+          rateLimitPerMinute: Number(form.rateLimitPerMinute) || 30,
+          maxConcurrency: Number(form.maxConcurrency) || 1,
+          chapterListSelector: form.chapterListSelector,
+          chapterBodySelector: form.chapterBodySelector,
+          adBlocklist: form.adBlocklist.split(',').map((item) => item.trim()).filter(Boolean),
+        })
+      }}
+    >
+      <label>
+        站点名称
+        <input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} />
+      </label>
+      <label>
+        基础域名
+        <input value={form.baseDomain} onChange={(event) => setForm({ ...form, baseDomain: event.target.value })} />
+      </label>
+      <label>
+        目录选择器
+        <input
+          value={form.chapterListSelector}
+          onChange={(event) => setForm({ ...form, chapterListSelector: event.target.value })}
+        />
+      </label>
+      <label>
+        正文选择器
+        <input
+          value={form.chapterBodySelector}
+          onChange={(event) => setForm({ ...form, chapterBodySelector: event.target.value })}
+        />
+      </label>
+      <label>
+        限速
+        <input
+          inputMode="numeric"
+          value={form.rateLimitPerMinute}
+          onChange={(event) => setForm({ ...form, rateLimitPerMinute: event.target.value })}
+        />
+      </label>
+      <label>
+        并发
+        <input
+          inputMode="numeric"
+          value={form.maxConcurrency}
+          onChange={(event) => setForm({ ...form, maxConcurrency: event.target.value })}
+        />
+      </label>
+      <label>
+        广告词
+        <input value={form.adBlocklist} onChange={(event) => setForm({ ...form, adBlocklist: event.target.value })} />
+      </label>
+      <button type="submit" disabled={isSubmitting || !form.name || !form.baseDomain}>
+        {isSubmitting ? '保存中' : '保存站点'}
+      </button>
+    </form>
   )
 }
 
@@ -260,6 +346,7 @@ function App() {
   const [recommendationsError, setRecommendationsError] = useState<string | null>(null)
   const [sites, setSites] = useState<AdminSiteRow[] | null>(null)
   const [isSitesLoading, setSitesLoading] = useState(false)
+  const [isSiteSubmitting, setSiteSubmitting] = useState(false)
   const [sitesError, setSitesError] = useState<string | null>(null)
   const [tasks, setTasks] = useState<AdminTaskRow[] | null>(null)
   const [isTasksLoading, setTasksLoading] = useState(false)
@@ -432,6 +519,19 @@ function App() {
           pageKey={activePage}
           tableState={tableState}
           complianceConfigCards={compliance?.configCards ?? []}
+          siteCreateForm={(
+            <SiteQuickCreateForm
+              isSubmitting={isSiteSubmitting}
+              onSubmit={(request) => {
+                setSiteSubmitting(true)
+                setSitesError(null)
+                adminApi.createSite(request)
+                  .then((site) => setSites((current) => [...(current ?? []), site]))
+                  .catch(() => setSitesError('站点保存失败，请检查域名和解析规则。'))
+                  .finally(() => setSiteSubmitting(false))
+              }}
+            />
+          )}
           glossaryCreateForm={(
             <GlossaryQuickCreateForm
               isSubmitting={isGlossarySubmitting}

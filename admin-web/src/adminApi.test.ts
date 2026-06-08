@@ -96,6 +96,53 @@ describe('admin api client', () => {
     ])
   })
 
+  it('creates crawling site through backend API', async () => {
+    const api = createAdminApi({
+      baseUrl: 'http://localhost:8080',
+      fetcher: async (url, init) => {
+        expect(url).toBe('http://localhost:8080/api/admin/crawling/sites')
+        expect(init?.method).toBe('POST')
+        expect(JSON.parse(String(init?.body))).toEqual({
+          name: '示例站点',
+          baseDomain: 'https://novels.example.com',
+          rateLimitPerMinute: 30,
+          maxConcurrency: 2,
+          chapterListSelector: '.chapter-list a',
+          chapterBodySelector: '.chapter-content',
+          adBlocklist: ['请收藏本站', '最新网址'],
+        })
+        return new Response(JSON.stringify({
+          id: 'site-1',
+          name: '示例站点',
+          baseDomain: 'https://novels.example.com',
+          enabled: true,
+          rateLimitPerMinute: 30,
+          maxConcurrency: 2,
+        }))
+      },
+    })
+
+    const site = await api.createSite({
+      name: '示例站点',
+      baseDomain: 'https://novels.example.com',
+      rateLimitPerMinute: 30,
+      maxConcurrency: 2,
+      chapterListSelector: '.chapter-list a',
+      chapterBodySelector: '.chapter-content',
+      adBlocklist: ['请收藏本站', '最新网址'],
+    })
+
+    expect(site).toEqual({
+      id: 'site-1',
+      name: '示例站点',
+      baseDomain: 'https://novels.example.com',
+      enabledStatus: '启用',
+      rateLimitLabel: '30 次/分钟',
+      maxConcurrency: '2',
+      lastFailureReason: '-',
+    })
+  })
+
   it('loads crawling tasks from backend response', async () => {
     const api = createAdminApi({
       baseUrl: 'http://localhost:8080',

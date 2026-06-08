@@ -31,6 +31,16 @@ export interface AdminSiteRow {
   lastFailureReason: string
 }
 
+export interface CreateSiteRequest {
+  name: string
+  baseDomain: string
+  rateLimitPerMinute: number
+  maxConcurrency: number
+  chapterListSelector: string
+  chapterBodySelector: string
+  adBlocklist: string[]
+}
+
 export interface AdminTaskRow {
   id: string
   type: string
@@ -275,6 +285,19 @@ export function createAdminApi(options: AdminApiOptions = {}) {
       }
       const payload = await response.json() as BackendSiteConfig[]
       return payload.map(toSiteRow)
+    },
+
+    async createSite(request: CreateSiteRequest): Promise<AdminSiteRow> {
+      const response = await fetcher(`${baseUrl}/api/admin/crawling/sites`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(request),
+      })
+      if (!response.ok) {
+        throw new Error(`站点创建失败：${response.status}`)
+      }
+      const payload = await response.json() as BackendSiteConfig
+      return toSiteRow(payload)
     },
 
     async listTasks(): Promise<AdminTaskRow[]> {
