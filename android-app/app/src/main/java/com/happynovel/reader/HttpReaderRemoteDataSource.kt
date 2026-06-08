@@ -27,6 +27,13 @@ class HttpReaderRemoteDataSource(
 
     override fun categories(): AppCategoriesResponseDto = parseCategories(client.get(routes.categories()))
 
+    override fun books(
+        category: String?,
+        status: String?,
+        sort: String?,
+        limit: Int,
+    ): AppBookListResponseDto = parseBookList(client.get(routes.books(category, status, sort, limit)))
+
     override fun bookDetail(bookId: String): AppBookDetailDto = parseBookDetail(client.get(routes.bookDetail(bookId)))
 
     override fun chapterCatalog(bookId: String): AppChapterCatalogResponseDto =
@@ -51,6 +58,13 @@ class HttpReaderRemoteDataSource(
         return AppCategoriesResponseDto(
             categories = root.getJSONArray("categories").mapObjects { it.toCategoryDto() },
             statuses = root.getJSONArray("statuses").mapStrings(),
+        )
+    }
+
+    private fun parseBookList(json: String): AppBookListResponseDto {
+        val root = JSONObject(json)
+        return AppBookListResponseDto(
+            books = root.getJSONArray("books").mapObjects { it.toBookSummaryDto() },
         )
     }
 

@@ -26,6 +26,12 @@ data class CategoriesUiState(
     val statuses: List<String>,
 )
 
+data class BookListUiState(
+    val title: String,
+    val books: List<BookSummary>,
+    val emptyMessage: String,
+)
+
 data class BookDetailUiState(
     val title: String,
     val author: String,
@@ -79,6 +85,12 @@ object ReaderUiStateFactory {
         filterLabels = listOf("Genre", "Status", "Sort"),
         categories = categoriesState.categories,
         statuses = categoriesState.statuses,
+    )
+
+    fun bookList(bookListState: BookListState): BookListUiState = BookListUiState(
+        title = "Book List",
+        books = bookListState.books,
+        emptyMessage = "No books found.",
     )
 
     fun bookDetail(bookDetailState: BookDetailReaderState): BookDetailUiState = BookDetailUiState(

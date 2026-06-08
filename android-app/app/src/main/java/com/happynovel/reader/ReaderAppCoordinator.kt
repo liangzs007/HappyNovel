@@ -5,6 +5,13 @@ interface ReaderRemoteDataSource {
 
     fun categories(): AppCategoriesResponseDto
 
+    fun books(
+        category: String?,
+        status: String?,
+        sort: String?,
+        limit: Int,
+    ): AppBookListResponseDto = AppBookListResponseDto(home().recommended.take(limit))
+
     fun bookDetail(bookId: String): AppBookDetailDto
 
     fun chapterCatalog(bookId: String): AppChapterCatalogResponseDto
@@ -15,6 +22,10 @@ interface ReaderRemoteDataSource {
 data class CategoriesState(
     val categories: List<CategorySummary>,
     val statuses: List<String>,
+)
+
+data class BookListState(
+    val books: List<BookSummary>,
 )
 
 data class BookDetailReaderState(
@@ -48,6 +59,15 @@ class ReaderAppCoordinator(
             statuses = response.statuses,
         )
     }
+
+    fun loadBooks(
+        category: String?,
+        status: String?,
+        sort: String?,
+        limit: Int,
+    ): BookListState = BookListState(
+        books = remoteDataSource.books(category, status, sort, limit).books.map { it.toReaderBookSummary() },
+    )
 
     fun loadBookDetail(bookId: String): BookDetailReaderState {
         val detail = remoteDataSource.bookDetail(bookId).toBookDetailState()

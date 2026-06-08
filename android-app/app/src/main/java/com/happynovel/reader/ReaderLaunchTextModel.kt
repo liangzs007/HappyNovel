@@ -18,6 +18,7 @@ object ReaderLaunchTextModelFactory {
     ): ReaderLaunchTextModel {
         val home = loader.home()
         val categories = loader.categories()
+        val books = loader.books(category = "fantasy", status = "ongoing", sort = "popular", limit = 12)
         val detail = loader.bookDetail(bookId)
         val catalog = loader.chapterCatalog(bookId)
         val reader = loader.reader(bookId, chapterId)
@@ -45,6 +46,14 @@ object ReaderLaunchTextModelFactory {
                     ReaderTextSection(
                         title = categories.content?.title ?: "Categories",
                         body = categories.content?.categories?.joinToString { it.name } ?: categories.message,
+                    ),
+                )
+                add(
+                    ReaderTextSection(
+                        title = books.content?.title ?: "Book List",
+                        body = books.content?.books?.joinToString("\n\n") {
+                            "${it.title}\n${it.author}\n${it.latestChapterTitle}"
+                        } ?: books.message,
                     ),
                 )
                 add(

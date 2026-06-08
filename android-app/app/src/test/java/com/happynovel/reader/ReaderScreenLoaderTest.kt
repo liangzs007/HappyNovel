@@ -42,6 +42,17 @@ class ReaderScreenLoaderTest {
     }
 
     @Test
+    fun `book list loader returns filtered books`() {
+        val loader = ReaderScreenLoader(
+            coordinator = ReaderAppCoordinator(SeedReaderRemoteDataSource(), InMemoryReaderLocalRepository()),
+        )
+
+        val state = loader.books(category = "fantasy", status = "ongoing", sort = "popular", limit = 12)
+
+        assertEquals("Dragon Gate", state.content?.books?.single()?.title)
+    }
+
+    @Test
     fun `reader loader returns unavailable empty state when chapter is missing`() {
         val loader = ReaderScreenLoader(
             coordinator = ReaderAppCoordinator(SeedReaderRemoteDataSource(), InMemoryReaderLocalRepository()),
@@ -64,6 +75,13 @@ private class EmptyReaderRemoteDataSource : ReaderRemoteDataSource {
 
     override fun categories(): AppCategoriesResponseDto = SeedReaderRemoteDataSource().categories()
 
+    override fun books(
+        category: String?,
+        status: String?,
+        sort: String?,
+        limit: Int,
+    ): AppBookListResponseDto = AppBookListResponseDto(emptyList())
+
     override fun bookDetail(bookId: String): AppBookDetailDto = SeedReaderRemoteDataSource().bookDetail(bookId)
 
     override fun chapterCatalog(bookId: String): AppChapterCatalogResponseDto =
@@ -77,6 +95,13 @@ private class FailingReaderRemoteDataSource : ReaderRemoteDataSource {
     override fun home(): AppHomeResponseDto = throw IllegalStateException("network unavailable")
 
     override fun categories(): AppCategoriesResponseDto = throw IllegalStateException("network unavailable")
+
+    override fun books(
+        category: String?,
+        status: String?,
+        sort: String?,
+        limit: Int,
+    ): AppBookListResponseDto = throw IllegalStateException("network unavailable")
 
     override fun bookDetail(bookId: String): AppBookDetailDto = throw IllegalStateException("network unavailable")
 

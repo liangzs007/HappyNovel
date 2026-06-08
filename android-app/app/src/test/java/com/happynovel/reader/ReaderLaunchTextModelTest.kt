@@ -16,6 +16,7 @@ class ReaderLaunchTextModelTest {
         assertEquals("HappyNovel", model.title)
         assertTrue(model.sections.any { it.title == "Recommended" })
         assertTrue(model.sections.any { it.body.contains("Dragon Gate") })
+        assertTrue(model.sections.any { it.title == "Book List" && it.body.contains("Dragon Gate") })
         assertTrue(model.sections.any { it.title == "Reader Preview" })
     }
 
@@ -37,6 +38,13 @@ private class FailingLaunchRemoteDataSource : ReaderRemoteDataSource {
     override fun home(): AppHomeResponseDto = throw IllegalStateException("network unavailable")
 
     override fun categories(): AppCategoriesResponseDto = throw IllegalStateException("network unavailable")
+
+    override fun books(
+        category: String?,
+        status: String?,
+        sort: String?,
+        limit: Int,
+    ): AppBookListResponseDto = throw IllegalStateException("network unavailable")
 
     override fun bookDetail(bookId: String): AppBookDetailDto = throw IllegalStateException("network unavailable")
 

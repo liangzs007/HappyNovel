@@ -14,6 +14,15 @@ class SeedReaderRemoteDataSource : ReaderRemoteDataSource {
         statuses = listOf("ongoing", "completed"),
     )
 
+    override fun books(
+        category: String?,
+        status: String?,
+        sort: String?,
+        limit: Int,
+    ): AppBookListResponseDto = AppBookListResponseDto(
+        books = listOf(book).filter { status.isNullOrBlank() || it.status == status }.take(limit),
+    )
+
     override fun bookDetail(bookId: String): AppBookDetailDto = AppBookDetailDto(
         id = book.id,
         title = book.title,

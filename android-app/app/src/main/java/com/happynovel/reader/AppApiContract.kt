@@ -7,6 +7,21 @@ class HappyNovelApiRoutes(baseUrl: String) {
 
     fun categories(): String = "$normalizedBaseUrl/api/app/categories"
 
+    fun books(
+        category: String?,
+        status: String?,
+        sort: String?,
+        limit: Int,
+    ): String {
+        val params = listOfNotNull(
+            category?.takeIf { it.isNotBlank() }?.let { "category=$it" },
+            status?.takeIf { it.isNotBlank() }?.let { "status=$it" },
+            sort?.takeIf { it.isNotBlank() }?.let { "sort=$it" },
+            "limit=$limit",
+        )
+        return "$normalizedBaseUrl/api/app/books?${params.joinToString("&")}"
+    }
+
     fun bookDetail(bookId: String): String = "$normalizedBaseUrl/api/app/books/$bookId"
 
     fun chapterCatalog(bookId: String): String = "$normalizedBaseUrl/api/app/books/$bookId/chapters"
@@ -60,6 +75,10 @@ data class AppHomeResponseDto(
 data class AppCategoriesResponseDto(
     val categories: List<AppCategoryDto>,
     val statuses: List<String>,
+)
+
+data class AppBookListResponseDto(
+    val books: List<AppBookSummaryDto>,
 )
 
 data class AppCategoryDto(

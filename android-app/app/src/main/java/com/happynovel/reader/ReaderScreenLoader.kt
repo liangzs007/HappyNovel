@@ -30,6 +30,24 @@ class ReaderScreenLoader(
         onFailure = { ScreenLoadState.error("Unable to load categories. Try again.") },
     )
 
+    fun books(
+        category: String?,
+        status: String?,
+        sort: String?,
+        limit: Int,
+    ): ScreenLoadState<BookListUiState> = runCatching {
+        ReaderUiStateFactory.bookList(coordinator.loadBooks(category, status, sort, limit))
+    }.fold(
+        onSuccess = { bookList ->
+            if (bookList.books.isEmpty()) {
+                ScreenLoadState.empty(bookList.emptyMessage)
+            } else {
+                ScreenLoadState.content(bookList)
+            }
+        },
+        onFailure = { ScreenLoadState.error("Unable to load books. Try again.") },
+    )
+
     fun bookDetail(bookId: String): ScreenLoadState<BookDetailUiState> = runCatching {
         ReaderUiStateFactory.bookDetail(coordinator.loadBookDetail(bookId))
     }.fold(

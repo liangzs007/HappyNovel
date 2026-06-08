@@ -11,6 +11,7 @@ class HttpReaderRemoteDataSourceTest {
             mapOf(
                 "https://api.example.test/api/app/home" to homeJson,
                 "https://api.example.test/api/app/categories" to categoriesJson,
+                "https://api.example.test/api/app/books?category=fantasy&status=ongoing&sort=popular&limit=12" to bookListJson,
                 "https://api.example.test/api/app/books/book-seed-1" to detailJson,
                 "https://api.example.test/api/app/books/book-seed-1/chapters" to catalogJson,
                 "https://api.example.test/api/app/chapters/chapter-seed-1" to chapterJson,
@@ -23,6 +24,7 @@ class HttpReaderRemoteDataSourceTest {
 
         assertEquals("Dragon Gate", dataSource.home().recommended.single().title)
         assertEquals("Fantasy", dataSource.categories().categories.single().name)
+        assertEquals("Dragon Gate", dataSource.books("fantasy", "ongoing", "popular", 12).books.single().title)
         assertEquals("Dragon Gate", dataSource.bookDetail("book-seed-1").title)
         assertEquals("chapter-seed-1", dataSource.chapterCatalog("book-seed-1").chapters.single().id)
         assertTrue(dataSource.chapterContent("chapter-seed-1").paragraphs.first().contains("Azure Cloud"))
@@ -64,6 +66,12 @@ const val categoriesJson = """
     {"id": "category-fantasy", "name": "Fantasy", "slug": "fantasy"}
   ],
   "statuses": ["ongoing", "completed"]
+}
+"""
+
+const val bookListJson = """
+{
+  "books": [$bookJson]
 }
 """
 
