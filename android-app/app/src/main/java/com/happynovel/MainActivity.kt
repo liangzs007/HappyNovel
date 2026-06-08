@@ -6,6 +6,7 @@ import android.view.Gravity
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import com.happynovel.reader.ReaderRemoteDataSourceFactory
 import com.happynovel.reader.ReaderLaunchStateFactory
 
 class MainActivity : Activity() {
@@ -15,7 +16,9 @@ class MainActivity : Activity() {
     }
 
     private fun buildContent(): ScrollView {
-        val launchState = ReaderLaunchStateFactory.create()
+        val launchState = ReaderLaunchStateFactory.create(
+            remoteDataSource = ReaderRemoteDataSourceFactory.create(BuildConfig.HAPPYNOVEL_API_BASE_URL),
+        )
 
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL

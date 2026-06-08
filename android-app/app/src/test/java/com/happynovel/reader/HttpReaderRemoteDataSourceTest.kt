@@ -29,13 +29,13 @@ class HttpReaderRemoteDataSourceTest {
     }
 }
 
-private class FakeHttpTextClient(
+class FakeHttpTextClient(
     private val responses: Map<String, String>,
 ) : HttpTextClient {
     override fun get(url: String): String = responses.getValue(url)
 }
 
-private const val bookJson = """
+const val bookJson = """
 {
   "id": "book-seed-1",
   "title": "Dragon Gate",
@@ -48,7 +48,7 @@ private const val bookJson = """
 }
 """
 
-private const val homeJson = """
+const val homeJson = """
 {
   "appName": "HappyNovel",
   "recommended": [$bookJson],
@@ -58,7 +58,7 @@ private const val homeJson = """
 }
 """
 
-private const val categoriesJson = """
+const val categoriesJson = """
 {
   "categories": [
     {"id": "category-fantasy", "name": "Fantasy", "slug": "fantasy"}
@@ -67,7 +67,7 @@ private const val categoriesJson = """
 }
 """
 
-private const val detailJson = """
+const val detailJson = """
 {
   "id": "book-seed-1",
   "title": "Dragon Gate",
@@ -83,7 +83,7 @@ private const val detailJson = """
 }
 """
 
-private const val catalogJson = """
+const val catalogJson = """
 {
   "bookId": "book-seed-1",
   "chapters": [
@@ -92,7 +92,7 @@ private const val catalogJson = """
 }
 """
 
-private const val chapterJson = """
+const val chapterJson = """
 {
   "id": "chapter-seed-1",
   "bookId": "book-seed-1",

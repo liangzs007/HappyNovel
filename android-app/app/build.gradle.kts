@@ -6,6 +6,10 @@ android {
     namespace = "com.happynovel"
     compileSdk = 36
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     defaultConfig {
         applicationId = "com.happynovel"
         minSdk = 24
@@ -13,6 +17,7 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "HAPPYNOVEL_API_BASE_URL", "\"\"")
     }
 }
 
