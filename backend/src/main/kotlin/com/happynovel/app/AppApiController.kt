@@ -9,6 +9,7 @@ import com.happynovel.content.ContentRepository
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
@@ -24,6 +25,10 @@ data class HomeResponse(
 data class CategoriesResponse(
     val categories: List<Category>,
     val statuses: List<String>,
+)
+
+data class BookListResponse(
+    val books: List<BookSummary>,
 )
 
 data class ChapterCatalogResponse(
@@ -61,6 +66,21 @@ class AppApiController(
     fun categories(): CategoriesResponse = CategoriesResponse(
         categories = contentRepository.categories(),
         statuses = contentRepository.statuses(),
+    )
+
+    @GetMapping("/books")
+    fun books(
+        @RequestParam(required = false) category: String?,
+        @RequestParam(required = false) status: String?,
+        @RequestParam(required = false) sort: String?,
+        @RequestParam(defaultValue = "20") limit: Int,
+    ): BookListResponse = BookListResponse(
+        books = contentRepository.browseBooks(
+            category = category,
+            status = status,
+            sort = sort,
+            limit = limit.coerceIn(1, 50),
+        ),
     )
 
     @GetMapping("/books/{bookId}")

@@ -50,6 +50,16 @@ interface ContentRepository {
     fun latestBooks(): List<BookSummary> = homeBooks()
     fun popularBooks(): List<BookSummary> = homeBooks()
     fun newBooks(): List<BookSummary> = homeBooks()
+    fun browseBooks(
+        category: String?,
+        status: String?,
+        sort: String?,
+        limit: Int,
+    ): List<BookSummary> = homeBooks()
+        .asSequence()
+        .filter { status.isNullOrBlank() || it.status == status }
+        .take(limit)
+        .toList()
     fun categories(): List<Category>
     fun statuses(): List<String>
     fun bookDetail(bookId: String): BookDetail

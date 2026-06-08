@@ -37,4 +37,12 @@ class MigrationDefinitionTest {
             assertTrue(migration.contains("create table if not exists $table"), "Missing table $table")
         }
     }
+
+    @Test
+    fun `second migration defines book category relationship`() {
+        val migration = Files.readString(Path.of("src/main/resources/db/migration/V2__book_category.sql"))
+
+        assertTrue(migration.contains("create table if not exists book_category"))
+        assertTrue(migration.contains("create index if not exists idx_book_category_category"))
+    }
 }

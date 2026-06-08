@@ -37,6 +37,49 @@ class JdbcContentRepository(
         databaseClient.query("$PUBLISHED_BOOKS_SQL order by b.updated_at desc limit 20")
             .map(JdbcContentRowMapper::bookSummary)
 
+    override fun browseBooks(
+        category: String?,
+        status: String?,
+        sort: String?,
+        limit: Int,
+    ): List<BookSummary> {
+        val conditions = mutableListOf<String>()
+        val args = mutableListOf<Any>()
+        if (!category.isNullOrBlank()) {
+            conditions += """
+                exists (
+                    select 1
+                    from book_category bc
+                    join taxonomy_category tc on tc.id = bc.category_id
+                    where bc.book_id = b.id
+                      and tc.slug = ?
+                      and tc.enabled = true
+                )
+            """.trimIndent()
+            args += category
+        }
+        if (!status.isNullOrBlank()) {
+            conditions += "b.serialization_status = ?"
+            args += status
+        }
+        val whereClause = if (conditions.isEmpty()) {
+            ""
+        } else {
+            conditions.joinToString(separator = " and ", prefix = " and ")
+        }
+        val orderBy = when (sort) {
+            "popular" -> "order by b.recommendation_weight desc, b.updated_at desc"
+            "newest" -> "order by b.updated_at desc"
+            "recommended" -> "order by b.recommendation_weight desc, b.updated_at desc"
+            else -> "order by b.updated_at desc"
+        }
+        return databaseClient.query(
+            "$PUBLISHED_BOOKS_SQL$whereClause $orderBy limit ?",
+            *args.toTypedArray(),
+            limit.coerceIn(1, 50),
+        ).map(JdbcContentRowMapper::bookSummary)
+    }
+
     override fun categories(): List<Category> =
         databaseClient.query(CATEGORIES_SQL).map(JdbcContentRowMapper::category)
 
