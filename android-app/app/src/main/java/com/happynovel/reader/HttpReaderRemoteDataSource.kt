@@ -1,0 +1,118 @@
+package com.happynovel.reader
+
+import org.json.JSONArray
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
+
+interface HttpTextClient {
+    fun get(url: String): String
+}
+
+class UrlConnectionHttpTextClient : HttpTextClient {
+    override fun get(url: String): String {
+        val connection = URL(url).openConnection() as HttpURLConnection
+        connection.requestMethod = "GET"
+        connection.connectTimeout = 10_000
+        connection.readTimeout = 10_000
+        return connection.inputStream.bufferedReader().use { it.readText() }
+    }
+}
+
+class HttpReaderRemoteDataSource(
+    private val routes: HappyNovelApiRoutes,
+    private val client: HttpTextClient = UrlConnectionHttpTextClient(),
+) : ReaderRemoteDataSource {
+    override fun home(): AppHomeResponseDto = parseHome(client.get(routes.home()))
+
+    override fun categories(): AppCategoriesResponseDto = parseCategories(client.get(routes.categories()))
+
+    override fun bookDetail(bookId: String): AppBookDetailDto = parseBookDetail(client.get(routes.bookDetail(bookId)))
+
+    override fun chapterCatalog(bookId: String): AppChapterCatalogResponseDto =
+        parseChapterCatalog(client.get(routes.chapterCatalog(bookId)))
+
+    override fun chapterContent(chapterId: String): AppChapterContentDto =
+        parseChapterContent(client.get(routes.chapterContent(chapterId)))
+
+    private fun parseHome(json: String): AppHomeResponseDto {
+        val root = JSONObject(json)
+        return AppHomeResponseDto(
+            appName = root.getString("appName"),
+            recommended = root.getJSONArray("recommended").mapObjects { it.toBookSummaryDto() },
+            latestUpdates = root.getJSONArray("latestUpdates").mapObjects { it.toBookSummaryDto() },
+            popular = root.getJSONArray("popular").mapObjects { it.toBookSummaryDto() },
+            newBooks = root.getJSONArray("newBooks").mapObjects { it.toBookSummaryDto() },
+        )
+    }
+
+    private fun parseCategories(json: String): AppCategoriesResponseDto {
+        val root = JSONObject(json)
+        return AppCategoriesResponseDto(
+            categories = root.getJSONArray("categories").mapObjects { it.toCategoryDto() },
+            statuses = root.getJSONArray("statuses").mapStrings(),
+        )
+    }
+
+    private fun parseBookDetail(json: String): AppBookDetailDto = JSONObject(json).toBookDetailDto()
+
+    private fun parseChapterCatalog(json: String): AppChapterCatalogResponseDto {
+        val root = JSONObject(json)
+        return AppChapterCatalogResponseDto(
+            bookId = root.getString("bookId"),
+            chapters = root.getJSONArray("chapters").mapObjects { it.toChapterSummaryDto() },
+        )
+    }
+
+    private fun parseChapterContent(json: String): AppChapterContentDto {
+        val root = JSONObject(json)
+        return AppChapterContentDto(
+            id = root.getString("id"),
+            bookId = root.getString("bookId"),
+            title = root.getString("title"),
+            language = root.getString("language"),
+            paragraphs = root.getJSONArray("paragraphs").mapStrings(),
+        )
+    }
+
+    private fun JSONObject.toBookSummaryDto(): AppBookSummaryDto = AppBookSummaryDto(
+        id = getString("id"),
+        title = getString("title"),
+        author = getString("author"),
+        coverUrl = getString("coverUrl"),
+        description = getString("description"),
+        status = getString("status"),
+        latestChapterTitle = getString("latestChapterTitle"),
+        updatedAt = getString("updatedAt"),
+    )
+
+    private fun JSONObject.toCategoryDto(): AppCategoryDto = AppCategoryDto(
+        id = getString("id"),
+        name = getString("name"),
+        slug = getString("slug"),
+    )
+
+    private fun JSONObject.toChapterSummaryDto(): AppChapterSummaryDto = AppChapterSummaryDto(
+        id = getString("id"),
+        order = getInt("order"),
+        title = getString("title"),
+        updatedAt = getString("updatedAt"),
+    )
+
+    private fun JSONObject.toBookDetailDto(): AppBookDetailDto = AppBookDetailDto(
+        id = getString("id"),
+        title = getString("title"),
+        author = getString("author"),
+        coverUrl = getString("coverUrl"),
+        description = getString("description"),
+        status = getString("status"),
+        categories = getJSONArray("categories").mapObjects { it.toCategoryDto() },
+        chapterCount = getInt("chapterCount"),
+        latestChapter = optJSONObject("latestChapter")?.toChapterSummaryDto(),
+    )
+
+    private fun JSONArray.mapStrings(): List<String> = List(length()) { index -> getString(index) }
+
+    private fun <T> JSONArray.mapObjects(transform: (JSONObject) -> T): List<T> =
+        List(length()) { index -> transform(getJSONObject(index)) }
+}
