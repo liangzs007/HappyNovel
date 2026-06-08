@@ -1,1 +1,14 @@
 .worktrees/
+
+.gradle/
+build/
+
+node_modules/
+dist/
+
+local.properties
+*.iml
+.idea/
+
+*.apk
+*.aab
