@@ -1,523 +1,523 @@
-# Novel Platform MVP Design
-
-## 1. Project Goal
+# 小说平台 MVP 设计规格
+
+## 1. 项目目标
 
-Build an operations-ready MVP for an overseas web novel reading product.
+构建一个可运营验证的海外网文阅读产品 MVP。
 
-The first phase creates a complete content pipeline:
+第一阶段需要跑通完整内容链路：
 
-1. Operators configure a small set of public Chinese novel sites and specific novel URLs.
-2. The backend crawls chapters manually or on a schedule.
-3. The system cleans, structures, and quality-checks chapter text.
-4. OpenAI translates approved chapters into English with book-specific glossary support.
-5. Translated chapters are automatically published to an Android reading app.
-6. The Android app serves overseas Google Play users with free reading and ads.
+1. 运营人员配置少量公开中文小说站点和指定小说 URL。
+2. 后端支持手动或定时抓取章节。
+3. 系统对章节文本进行清洗、结构化和质量检测。
+4. 通过 OpenAI 将合格章节翻译成英文，并结合每本书的专属术语表保证译名一致。
+5. 翻译完成的章节自动发布到 Android 阅读 App。
+6. Android App 面向 Google Play 海外用户，提供免费阅读和广告变现。
 
-The Web admin console is for internal operators and uses a Chinese UI. The Android app defaults to an English UI and reads translated English content. App UI language and novel content language are managed separately.
+Web 后台面向内部运营人员，使用中文界面。Android App 默认使用英文界面，并展示英文译文内容。App 界面语言和小说内容语言分开管理。
 
-## 2. MVP Scope
+## 2. MVP 范围
 
-The MVP supports:
+MVP 支持：
 
-- 1-3 configured public novel sites.
-- 10-30 manually added novels.
-- Chinese source content translated to English.
-- Android reader app plus Web admin console.
-- Kotlin/Spring Boot backend.
-- PostgreSQL storage.
-- Redis-assisted scheduling, queueing, or caching if needed.
-- OpenAI as the first translation provider through an abstract provider interface.
-- Local development deployment, with Docker, environment variables, and database migrations reserved for future production deployment.
+- 配置 1-3 个公开小说站点。
+- 手动添加 10-30 本小说。
+- 中文原文翻译为英文。
+- Android 阅读 App 和 Web 后台。
+- Kotlin/Spring Boot 后端。
+- PostgreSQL 数据库存储。
+- 如有需要，使用 Redis 辅助调度、队列或缓存。
+- 通过抽象翻译供应商接口接入 OpenAI 作为第一个翻译供应商。
+- 本地开发部署，并预留 Docker、环境变量和数据库迁移能力，方便后续生产部署。
 
-The MVP does not include:
+MVP 不包括：
 
-- Full-web search crawling.
-- Automatic discovery of new novels.
-- Personalized recommendations.
-- Paid chapters, subscriptions, or paid ad removal.
-- Full role-based admin workflows.
-- Full human editing workflow.
-- Web reading site.
-- Author portal.
-- Comments, community, audio reading, or complex page-turn animations.
-- Full CI/CD, monitoring, backups, or production operations.
+- 全网搜索式抓取。
+- 自动发现新小说。
+- 个性化推荐。
+- 付费章节、订阅或付费去广告。
+- 完整的后台角色权限流程。
+- 完整的人工润色和审核流程。
+- Web 阅读站。
+- 作者后台。
+- 评论、社区、听书或复杂翻页动画。
+- 完整 CI/CD、监控、备份或生产运维体系。
 
-## 3. Content Source and Crawling
+## 3. 内容来源与抓取
 
-Content comes from specified public novel sites and specified novel URLs. Operators add each source URL manually in the admin console and bind it to a site configuration.
+内容来源为指定公开小说站点和指定小说 URL。运营人员在后台手动添加每个来源 URL，并绑定到对应站点配置。
 
-Site configuration includes:
+站点配置包括：
 
-- Site name.
-- Base domain.
-- Request headers.
-- Character encoding.
-- Rate limit.
-- Max concurrency.
-- Chapter list parsing rule.
-- Chapter body parsing rule.
-- Ad filtering rules.
-- Enabled or disabled state.
+- 站点名称。
+- 基础域名。
+- 请求头。
+- 字符编码。
+- 请求限速。
+- 最大并发数。
+- 章节列表解析规则。
+- 章节正文解析规则。
+- 广告过滤规则。
+- 启用或禁用状态。
 
-Crawler triggers:
+爬虫触发方式：
 
-- Manual full-book crawl.
-- Manual latest-chapter crawl.
-- Manual recrawl for a selected chapter.
-- Scheduled incremental checks based on each book's configured update interval.
+- 手动抓取整本书。
+- 手动抓取最新章节。
+- 手动重抓指定章节。
+- 按每本书配置的更新频率定时增量检查。
 
-Crawler tasks record:
+爬虫任务需要记录：
 
-- Task type.
-- Target site, book, and optional chapter.
-- Status.
-- Started and finished timestamps.
-- Duration.
-- Retry count.
-- Failure reason.
-- Number of chapters found or updated.
+- 任务类型。
+- 目标站点、书籍和可选章节。
+- 任务状态。
+- 开始和结束时间。
+- 执行耗时。
+- 重试次数。
+- 失败原因。
+- 本次发现或更新的章节数量。
 
-The crawler limits same-site concurrency and request frequency to reduce blocking risk.
+爬虫需要限制同一站点的并发数和请求频率，降低被封禁风险。
 
-## 4. Text Cleaning and Quality Checks
+## 4. 文本清洗与质量检测
 
-The system stores raw fetched HTML or text before cleaning.
+系统在清洗前需要保存抓取到的原始 HTML 或文本。
 
-Cleaning includes:
+清洗流程包括：
 
-- Removing HTML.
-- Removing scripts.
-- Removing ad paragraphs.
-- Removing navigation text.
-- Removing unrelated links.
-- Normalizing chapter titles.
-- Saving body text as structured paragraphs.
+- 移除 HTML。
+- 移除脚本内容。
+- 移除广告段落。
+- 移除导航文字。
+- 移除无关链接。
+- 标准化章节标题。
+- 将正文按结构化段落保存。
 
-Quality checks include:
+质量检测包括：
 
-- Duplicate chapter detection.
-- Suspected missing chapter sequence.
-- Body too short or too long.
-- High garbled-text ratio.
-- Residual ad keyword detection.
+- 重复章节检测。
+- 疑似缺章检测。
+- 正文过短或过长检测。
+- 乱码比例检测。
+- 广告关键词残留检测。
 
-Chapters that pass quality checks move to the pending translation state.
+通过质量检测的章节进入待翻译状态。
 
-Abnormal chapters move to `needs_review` or `blocked` and are not translated automatically. Admin users can inspect the raw content and cleaned body, then trigger recrawl, reclean, or manual status changes.
+异常章节进入 `needs_review` 或 `blocked` 状态，不自动翻译。后台管理员可以查看原始内容和清洗后的正文，并触发重抓、重新清洗或手动调整状态。
 
-## 5. AI Translation and Glossary
+## 5. AI 翻译与术语表
 
-Translation uses a provider abstraction. The MVP implements OpenAI first.
+翻译能力通过供应商抽象接口实现。MVP 首先实现 OpenAI。
 
-The translation provider interface must allow future providers without changing business task flow.
+翻译供应商接口需要支持未来扩展其他供应商，同时不改变业务任务流。
 
-Translation tasks record:
+翻译任务需要记录：
 
-- Provider.
-- Model.
-- Source language.
-- Target language.
-- Book and chapter.
-- Input token count.
-- Output token count.
-- Estimated cost.
-- Status.
-- Retry count.
-- Failure reason.
+- 供应商。
+- 模型。
+- 源语言。
+- 目标语言。
+- 书籍和章节。
+- 输入 token 数。
+- 输出 token 数。
+- 预估成本。
+- 任务状态。
+- 重试次数。
+- 失败原因。
 
-Target languages are configurable, but MVP only enables English.
+目标语言在后台可配置，但 MVP 只启用英文。
 
-Each book has its own glossary. Glossary entries include:
+每本书维护独立术语表。术语表条目包括：
 
-- Chinese source term.
-- English translated term.
-- Type.
-- Description.
-- Enabled state.
+- 中文原词。
+- 英文译名。
+- 类型。
+- 说明。
+- 启用状态。
 
-Glossary term types include:
+术语类型包括：
 
-- Person.
-- Place.
-- Organization.
-- Cultivation method or skill.
-- Item.
-- Title or form of address.
-- Other.
+- 人物。
+- 地点。
+- 组织。
+- 功法或技能。
+- 物品。
+- 称谓。
+- 其他。
 
-Chapter translation requirements:
+章节翻译要求：
 
-- Translate by chapter.
-- Split long chapters by paragraph when needed.
-- Preserve paragraph structure.
-- Preserve translated chapter title.
-- Include the book glossary in translation context.
-- Keep names, places, organizations, skills, and special terms consistent across chapters.
+- 按章节翻译。
+- 长章节需要按段落分块翻译。
+- 保留段落结构。
+- 保留翻译后的章节标题。
+- 将该书术语表带入翻译上下文。
+- 保证人物、地点、组织、技能和特殊术语跨章节一致。
 
-The system may detect suspected new proper nouns and add them to a pending glossary confirmation list. Operators can confirm, edit, or ignore these suggestions.
+系统可以识别疑似新增专有名词，并加入待确认术语列表。运营人员可以确认、编辑或忽略这些建议。
 
-Translated chapters move to publishable state. The MVP auto-publishes translated chapters by default, while preserving admin controls for hiding a chapter, taking down a book, and triggering retranslation.
+译文章节进入可发布状态。MVP 默认自动发布译文章节，同时保留后台隐藏单章、下架整本书和触发重翻译的能力。
 
-## 6. Web Admin Console
+## 6. Web 后台
 
-The Web admin console uses a Chinese UI.
+Web 后台使用中文界面。
 
-MVP authentication uses a single administrator account. The data model and backend structure reserve future role and permission support.
+MVP 使用单管理员账号登录。数据模型和后端结构需要预留未来角色和权限扩展。
 
-Critical admin actions create audit logs, including:
+关键后台操作需要生成审计日志，包括：
 
-- Site configuration changes.
-- Book import.
-- Manual crawl trigger.
-- Glossary changes.
-- Book or chapter takedown.
-- Retranslation trigger.
-- Publication state changes.
+- 修改站点配置。
+- 导入书籍。
+- 手动触发抓取。
+- 修改术语表。
+- 下架书籍或章节。
+- 触发重翻译。
+- 修改发布状态。
 
-Admin modules:
+后台模块包括以下内容。
 
-### Dashboard
+### 仪表盘
 
-Shows:
+展示：
 
-- Book count.
-- Chapter count.
-- Today's crawl task count.
-- Translation task count.
-- Failed task count.
-- Abnormal chapter count.
-- Pending glossary term count.
+- 书籍数量。
+- 章节数量。
+- 今日抓取任务数。
+- 翻译任务数。
+- 失败任务数。
+- 异常章节数。
+- 待确认术语数。
 
-### Site Management
+### 站点管理
 
-Supports:
+支持：
 
-- Create and edit site configurations.
-- Configure parser and filtering rules.
-- Configure rate limits and concurrency.
-- Enable or disable sites.
-- Test parsing against a selected URL and inspect parsed output.
+- 新增和编辑站点配置。
+- 配置解析规则和过滤规则。
+- 配置请求限速和并发数。
+- 启用或禁用站点。
+- 使用指定 URL 测试解析，并查看解析结果。
 
-### Book Management
+### 书籍管理
 
-Supports:
+支持：
 
-- Add a novel source URL.
-- Maintain title, author, cover, description, categories, tags, serialization state, update frequency, publication state, recommendation weight, and ad switch.
-- Trigger full recrawl, latest-chapter crawl, and full-book retranslation.
-- Take down, hide, or republish a book.
+- 添加小说来源 URL。
+- 维护书名、作者、封面、简介、分类、标签、连载状态、更新频率、发布状态、推荐权重和广告开关。
+- 触发整书重抓、最新章节抓取和整书重翻译。
+- 下架、隐藏或重新发布书籍。
 
-### Chapter Management
+### 章节管理
 
-Supports:
+支持：
 
-- List chapters.
-- Inspect crawl, cleaning, translation, and publication states.
-- View raw fetched content.
-- View cleaned source body.
-- View English translated body.
-- Hide a chapter.
-- Recrawl a chapter.
-- Reclean a chapter.
-- Retranslate a chapter.
+- 查看章节列表。
+- 查看抓取、清洗、翻译和发布状态。
+- 查看原始抓取内容。
+- 查看清洗后的原文正文。
+- 查看英文译文正文。
+- 隐藏单章。
+- 重抓章节。
+- 重新清洗章节。
+- 重翻译章节。
 
-### Glossary Management
+### 术语表管理
 
-Supports:
+支持：
 
-- Maintain book-level glossary entries.
-- Add, edit, disable, and import terms.
-- Process pending glossary suggestions.
+- 维护书籍级术语表。
+- 新增、编辑、禁用和导入术语。
+- 处理待确认术语建议。
 
-### Task Management
+### 任务管理
 
-Supports:
+支持：
 
-- Inspect crawler, cleaning, and translation queues.
-- View task state, failure reason, duration, and retry count.
-- Retry or cancel tasks.
+- 查看爬虫、清洗和翻译队列。
+- 查看任务状态、失败原因、执行耗时和重试次数。
+- 重试或取消任务。
 
-### Category and Recommendation Management
+### 分类与推荐管理
 
-Supports:
+支持：
 
-- Maintain categories, tags, recommendation slots, and ordering weights.
-- Configure list sorting by update time, read count, favorite count, and admin weight.
+- 维护分类、标签、推荐位和排序权重。
+- 配置列表按更新时间、阅读量、收藏量和后台权重排序。
 
-### Compliance and Publication Control
+### 合规与发布控制
 
-Supports:
+支持：
 
-- Book and chapter takedown.
-- Book and chapter hiding.
-- Delete markers.
-- Copyright complaint records.
-- Privacy policy URL.
-- Terms of service URL.
-- Advertising disclosure text.
+- 书籍和章节下架。
+- 书籍和章节隐藏。
+- 删除标记。
+- 版权投诉记录。
+- 隐私政策 URL。
+- 服务条款 URL。
+- 广告披露文案。
 
 ## 7. Android App
 
-The Android app targets overseas Google Play readers.
+Android App 面向 Google Play 海外读者。
 
-MVP app characteristics:
+MVP App 特性：
 
-- Kotlin.
-- Jetpack Compose.
-- English UI by default.
-- UI i18n structure reserved.
-- No forced login.
-- Guest reading support.
-- Local bookshelf, reading progress, reading settings, and recent reading.
-- Backend anonymous device ID support.
-- Future Google login and anonymous data merge reserved.
+- Kotlin。
+- Jetpack Compose。
+- 默认英文界面。
+- 预留 UI 国际化结构。
+- 不强制登录。
+- 支持游客阅读。
+- 本地保存书架、阅读进度、阅读设置和最近阅读。
+- 后端支持匿名设备 ID。
+- 预留未来 Google 登录和匿名数据合并能力。
 
-Main screens:
+主要页面如下。
 
-### Home
+### 首页
 
-Shows recommendation, new books, latest updates, and popular lists.
+展示推荐、新书、最新更新和热门列表。
 
-Sorting is based on backend rules, including:
+排序基于后端规则，包括：
 
-- Update time.
-- Read count.
-- Favorite count.
-- Admin recommendation weight.
+- 更新时间。
+- 阅读量。
+- 收藏量。
+- 后台推荐权重。
 
-### Categories
+### 分类页
 
-Allows browsing by genre, tag, and serialization state. Supports pagination, empty state, and error retry.
+支持按题材、标签和连载状态浏览。需要支持分页、空状态和错误重试。
 
-### Book Detail
+### 书籍详情页
 
-Shows:
+展示：
 
-- Cover.
-- Title.
-- Author.
-- Description.
-- Categories and tags.
-- Serialization state.
-- Latest chapter.
-- Update time.
+- 封面。
+- 书名。
+- 作者。
+- 简介。
+- 分类和标签。
+- 连载状态。
+- 最新章节。
+- 更新时间。
 
-Actions:
+操作：
 
-- Add to bookshelf.
-- Start reading.
-- Open chapter catalog.
+- 加入书架。
+- 开始阅读。
+- 打开章节目录。
 
-### Chapter Catalog
+### 章节目录
 
-Shows chapter list, update time, and local read state. Users can open any available chapter.
+展示章节列表、更新时间和本地阅读状态。用户可以打开任意可用章节。
 
-### Reader
+### 阅读器
 
-Supports:
+支持：
 
-- Chapter body reading.
-- Previous and next chapter.
-- Catalog entry.
-- Font size setting.
-- Line height setting.
-- Day and night mode.
-- Background color setting.
-- Reading progress persistence.
-- Current and next chapter preloading.
+- 章节正文阅读。
+- 上一章和下一章。
+- 章节目录入口。
+- 字体大小设置。
+- 行距设置。
+- 日间和夜间模式。
+- 背景色设置。
+- 阅读进度保存。
+- 当前章和下一章预加载。
 
-Complex page-turn animations are out of MVP scope.
+复杂翻页动画不在 MVP 范围内。
 
-### Bookshelf
+### 书架
 
-Shows saved novels, recent reading progress, and latest chapter hints. MVP storage is local. Login-based sync is reserved.
+展示已收藏小说、最近阅读进度和最新章节提示。MVP 使用本地存储，登录后的同步能力后续预留。
 
-### Cache
+### 缓存
 
-Supports simple offline caching for recently read books, prioritizing the current chapter, adjacent chapters, or a small recent chapter window. Full-book download is out of MVP scope.
+支持最近阅读书籍的简单离线缓存，优先缓存当前章节、相邻章节或最近若干章节。不支持整书下载。
 
-### Ads
+### 广告
 
-The Android app integrates Google AdMob.
+Android App 接入 Google AdMob。
 
-Supported ad behavior:
+支持的广告行为：
 
-- Chapter-between ads or bottom reader ad placement.
-- Optional interstitial ads on chapter switching.
-- Interstitial frequency controlled by backend config.
-- Ad enablement controlled by book, language, or region.
+- 章节间广告或阅读器底部广告位。
+- 章节切换时可选插屏广告。
+- 插屏频率由后端配置控制。
+- 是否启用广告可以按书籍、语言或地区控制。
 
-Paid ad removal, subscriptions, and paid chapters are out of MVP scope.
+付费去广告、订阅和付费章节不在 MVP 范围内。
 
-## 8. Backend API and Core Modules
+## 8. 后端 API 与核心模块
 
-The backend uses Kotlin and Spring Boot.
+后端使用 Kotlin 和 Spring Boot。
 
-Core modules:
+核心模块如下。
 
-### Content Module
+### 内容模块
 
-Manages books, chapters, categories, tags, covers, descriptions, publication states, recommendation weights, read counts, and favorite counts.
+管理书籍、章节、分类、标签、封面、简介、发布状态、推荐权重、阅读量和收藏量。
 
-### Crawling Module
+### 抓取模块
 
-Manages site configuration, source URLs, crawler tasks, parsing, rate limits, concurrency, incremental updates, and retry behavior.
+管理站点配置、来源 URL、爬虫任务、解析规则、请求限速、并发、增量更新和重试行为。
 
-### Cleaning and Quality Module
+### 清洗与质量模块
 
-Stores raw content and cleaned content. Runs ad cleaning, paragraph structuring, title normalization, duplicate checks, garbled-text checks, and abnormal chapter marking.
+保存原始内容和清洗后内容。执行广告清理、段落结构化、标题标准化、重复检测、乱码检测和异常章节标记。
 
-### Translation Module
+### 翻译模块
 
-Manages translation languages, translation tasks, OpenAI provider, glossary, pending glossary terms, translation chunking, translated-text merging, cost tracking, and retry behavior.
+管理翻译语言、翻译任务、OpenAI Provider、术语表、待确认术语、翻译分块、译文合并、成本统计和重试行为。
 
-### Publication Module
+### 发布模块
 
-Controls whether books and chapters are visible to the Android app. Supports auto-publication, takedown, hiding, and republishing after retranslation.
+控制书籍和章节是否对 Android App 可见。支持自动发布、下架、隐藏和重翻译后的重新发布。
 
 ### App API
 
-Provides:
+提供：
 
-- Home lists.
-- Category lists.
-- Book detail.
-- Chapter catalog.
-- Chapter content.
-- Ad config.
-- Anonymous device initialization.
-- Reading behavior reporting.
+- 首页列表。
+- 分类列表。
+- 书籍详情。
+- 章节目录。
+- 章节内容。
+- 广告配置。
+- 匿名设备初始化。
+- 阅读行为上报。
 
-### Admin API
+### 后台 API
 
-Provides:
+提供：
 
-- Site management.
-- Book management.
-- Chapter management.
-- Task management.
-- Glossary management.
-- Category and recommendation configuration.
-- Publication control.
-- Compliance configuration.
-- Admin login.
-- Audit logs.
+- 站点管理。
+- 书籍管理。
+- 章节管理。
+- 任务管理。
+- 术语表管理。
+- 分类与推荐配置。
+- 发布控制。
+- 合规配置。
+- 管理员登录。
+- 审计日志。
 
-### User and Device Module
+### 用户与设备模块
 
-MVP uses anonymous device ID. The backend records only necessary reading behavior and error logs.
+MVP 使用匿名设备 ID。后端只记录必要的阅读行为和错误日志。
 
-Future support is reserved for:
+后续预留：
 
-- User table.
-- Device table.
-- Bookshelf sync.
-- Reading progress sync.
-- Google login binding.
-- Anonymous data merge.
+- 用户表。
+- 设备表。
+- 书架同步。
+- 阅读进度同步。
+- Google 登录绑定。
+- 匿名数据合并。
 
-## 9. Main Data Flow
+## 9. 主数据流
 
-1. Operator configures a site and adds a novel URL.
-2. Operator manually triggers crawling, or a schedule triggers incremental crawling.
-3. The crawler fetches chapter list and chapter bodies.
-4. The backend stores raw fetched content.
-5. The cleaning module creates structured chapter content.
-6. Quality checks mark chapters as translatable or abnormal.
-7. Translatable chapters create English translation tasks.
-8. The OpenAI provider translates chapters with glossary context.
-9. The system stores translated chapters with paragraph structure.
-10. Translated chapters are automatically published.
-11. The Android app fetches published books, catalogs, and chapter content through App API.
-12. Reading behavior is reported to the backend for counts, ranking, and future recommendation support.
+1. 运营人员配置站点并添加小说 URL。
+2. 运营人员手动触发抓取，或系统定时触发增量抓取。
+3. 爬虫抓取章节列表和章节正文。
+4. 后端保存原始抓取内容。
+5. 清洗模块生成结构化章节内容。
+6. 质量检测将章节标记为可翻译或异常。
+7. 可翻译章节生成英文翻译任务。
+8. OpenAI Provider 携带术语表上下文翻译章节。
+9. 系统按段落结构保存译文。
+10. 译文章节自动发布。
+11. Android App 通过 App API 获取已发布书籍、章节目录和章节内容。
+12. 阅读行为回传后端，用于阅读量、排序和后续推荐能力。
 
-## 10. Data and Index Requirements
+## 10. 数据与索引要求
 
-The data model must separately preserve:
+数据模型需要分别保留：
 
-- Raw fetched content.
-- Cleaned source content.
-- Translated content.
-- Book publication state.
-- Chapter publication state.
-- Crawling state.
-- Cleaning state.
-- Translation state.
+- 原始抓取内容。
+- 清洗后的原文内容。
+- 翻译内容。
+- 书籍发布状态。
+- 章节发布状态。
+- 抓取状态。
+- 清洗状态。
+- 翻译状态。
 
-Indexes should support:
+索引需要支持：
 
-- Book by publication state, language, category, tag, update time, and recommendation weight.
-- Chapter by book, chapter order, publication state, and update time.
-- Translation by chapter, language, provider, and state.
-- Tasks by type, state, priority, created time, and retry count.
-- Audit logs by actor, action, target, and created time.
+- 按发布状态、语言、分类、标签、更新时间和推荐权重查询书籍。
+- 按书籍、章节序号、发布状态和更新时间查询章节。
+- 按章节、语言、供应商和状态查询翻译。
+- 按类型、状态、优先级、创建时间和重试次数查询任务。
+- 按操作人、操作类型、目标对象和创建时间查询审计日志。
 
-Task tables must support:
+任务表需要支持：
 
-- Status.
-- Retry count.
-- Failure reason.
-- Duration.
-- Provider metadata.
-- Cost metadata.
+- 状态。
+- 重试次数。
+- 失败原因。
+- 执行耗时。
+- 供应商元数据。
+- 成本元数据。
 
-## 11. Compliance Requirements
+## 11. 合规要求
 
-MVP includes basic compliance preparation:
+MVP 包含基础合规预留：
 
-- Privacy policy URL.
-- Terms of service URL.
-- Advertising disclosure.
-- Anonymous device ID only before login.
-- Minimal data collection.
-- Book and chapter takedown.
-- Book and chapter hiding.
-- Delete markers.
-- Copyright complaint records and status.
-- Source URL and crawl timestamp tracking.
+- 隐私政策 URL。
+- 服务条款 URL。
+- 广告披露。
+- 登录前仅使用匿名设备 ID。
+- 最小化数据采集。
+- 书籍和章节下架。
+- 书籍和章节隐藏。
+- 删除标记。
+- 版权投诉记录和处理状态。
+- 来源 URL 和抓取时间记录。
 
-The project must explicitly recognize that crawling, translating, and publishing public-site novels can create copyright and Google Play takedown risk if content is not authorized. Before real public release, content authorization or a stronger complaint and takedown process should be prepared.
+项目需要明确：如果没有授权，抓取、翻译并发布公开站点小说可能带来版权风险和 Google Play 下架风险。真实公开发布前，建议准备内容授权方案，或建立更完善的投诉和下架处理流程。
 
-## 12. Acceptance Criteria
+## 12. 验收标准
 
-MVP is accepted when:
+MVP 达成以下条件即可验收：
 
-1. Admin can configure 1-3 novel sites and specified novel URLs.
-2. The system can manually and periodically crawl chapters.
-3. Crawl tasks record state, timing, retry count, and failure reason.
-4. Crawled content can be cleaned, structured, and quality checked.
-5. Abnormal chapters do not enter automatic translation.
-6. Each book can maintain a glossary and person-name table.
-7. OpenAI translation runs by chapter, preserves paragraph structure, and records cost metadata.
-8. English translations can auto-publish to the app.
-9. Admin can take down a book, hide a chapter, recrawl, reclean, and retranslate.
-10. Android app supports home, categories, detail, catalog, reader, and bookshelf.
-11. Reader supports font size, line height, day/night mode, background color, progress saving, preloading, and simple cache.
-12. Android app supports AdMob placements and receives backend ad config.
-13. Local development can run backend, database, Web admin, and Android app debugging.
+1. 后台可以配置 1-3 个小说站点和指定小说 URL。
+2. 系统可以手动和定时抓取章节。
+3. 抓取任务记录状态、时间、重试次数和失败原因。
+4. 抓取内容可以完成清洗、结构化和质量检测。
+5. 异常章节不会进入自动翻译。
+6. 每本书可以维护术语表和人名表。
+7. OpenAI 翻译按章节执行，保留段落结构，并记录成本元数据。
+8. 英文译文可以自动发布到 App。
+9. 后台可以下架书籍、隐藏章节、重抓、重新清洗和重翻译。
+10. Android App 支持首页、分类、详情、目录、阅读器和书架。
+11. 阅读器支持字体大小、行距、日夜模式、背景色、进度保存、预加载和简单缓存。
+12. Android App 支持 AdMob 广告位，并从后端获取广告配置。
+13. 本地开发环境可以跑通后端、数据库、Web 后台和 Android App 调试。
 
-## 13. Later Roadmap
+## 13. 后续路线图
 
-### Phase 2
+### 第二阶段
 
-- Google login.
-- Bookshelf and progress sync.
-- More target languages.
-- More site configurations.
-- Translation quality improvements.
+- Google 登录。
+- 书架和阅读进度同步。
+- 更多目标语言。
+- 更多站点配置。
+- 翻译质量优化。
 
-### Phase 3
+### 第三阶段
 
-- Human editing and review workflow.
-- Role and permission management.
-- Operations reporting.
-- Recommendation slot management.
-- Production deployment.
-- Monitoring and backups.
+- 人工润色和审核流程。
+- 角色和权限管理。
+- 运营报表。
+- 推荐位管理。
+- 生产部署。
+- 监控和备份。
 
-### Phase 4
+### 第四阶段
 
-- Personalized recommendation.
-- Subscription or ad removal.
-- Web reading site.
-- Author or content partner portal.
+- 个性化推荐。
+- 订阅或去广告。
+- Web 阅读站。
+- 作者或内容合作方后台。
