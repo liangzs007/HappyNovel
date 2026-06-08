@@ -240,6 +240,19 @@ export function createAdminApi(options: AdminApiOptions = {}) {
       return payload.map(toTaskRow)
     },
 
+    async retryTask(taskId: string, html: string): Promise<AdminTaskRow> {
+      const response = await fetcher(`${baseUrl}/api/admin/crawling/tasks/${taskId}/retry`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ html }),
+      })
+      if (!response.ok) {
+        throw new Error(`任务重试失败：${response.status}`)
+      }
+      const payload = await response.json() as BackendPipelineTask
+      return toTaskRow(payload)
+    },
+
     async loadCompliance(): Promise<AdminComplianceResult> {
       const response = await fetcher(`${baseUrl}/api/admin/compliance`)
       if (!response.ok) {

@@ -52,6 +52,25 @@ class CrawlingPipelineTest {
     }
 
     @Test
+    fun `failed crawl task can be retried and records retry count`() {
+        val service = CrawlingPipelineService()
+        val site = service.createSiteConfig(defaultSiteRequest())
+        val source = service.createBookSource(defaultBookSource(site.id))
+
+        val failed = service.crawlBook(
+            bookSourceId = source.id,
+            html = "<div class=\"chapter-list\"></div>",
+        )
+        val retried = service.retryTask(failed.id, sampleBookHtml())
+
+        assertEquals(PipelineTaskStatus.FAILED, failed.status)
+        assertEquals("未解析到章节链接", failed.failureReason)
+        assertEquals(PipelineTaskStatus.SUCCEEDED, retried.status)
+        assertEquals(1, retried.retryCount)
+        assertEquals(2, retried.chaptersFound)
+    }
+
+    @Test
     fun `parser extracts chapter links and body content`() {
         val parser = NovelHtmlParser()
 

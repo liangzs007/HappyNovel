@@ -20,6 +20,21 @@ class CrawlingAdminControllerTest {
         assertEquals(2, controller.rawChapters(source.id).size)
     }
 
+    @Test
+    fun `admin can retry failed crawl task`() {
+        val service = CrawlingPipelineService()
+        val controller = CrawlingAdminController(service)
+
+        val site = controller.createSite(defaultSiteRequest())
+        val source = controller.createBookSource(defaultBookSource(site.id))
+        val failed = controller.triggerBookCrawl(source.id, TriggerCrawlRequest("<div class=\"chapter-list\"></div>"))
+        val retried = controller.retryTask(failed.id, TriggerCrawlRequest(sampleBookHtml()))
+
+        assertEquals(PipelineTaskStatus.FAILED, failed.status)
+        assertEquals(PipelineTaskStatus.SUCCEEDED, retried.status)
+        assertEquals(1, retried.retryCount)
+    }
+
     private fun defaultSiteRequest(): CreateSiteConfigRequest = CreateSiteConfigRequest(
         name = "示例站点",
         baseDomain = "https://novels.example.com",

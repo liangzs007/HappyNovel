@@ -109,6 +109,37 @@ describe('admin api client', () => {
     ])
   })
 
+  it('retries crawling task through backend API', async () => {
+    const api = createAdminApi({
+      baseUrl: 'http://localhost:8080',
+      fetcher: async (url, init) => {
+        expect(url).toBe('http://localhost:8080/api/admin/crawling/tasks/task-1/retry')
+        expect(init?.method).toBe('POST')
+        expect(JSON.parse(String(init?.body))).toEqual({ html: '<div class="chapter-list"></div>' })
+        return new Response(JSON.stringify({
+          id: 'task-1-retry',
+          type: 'CRAWL_BOOK',
+          status: 'SUCCEEDED',
+          targetId: 'source-1',
+          retryCount: 1,
+          failureReason: null,
+        }))
+      },
+    })
+
+    const task = await api.retryTask('task-1', '<div class="chapter-list"></div>')
+
+    expect(task).toEqual({
+      id: 'task-1-retry',
+      type: 'CRAWL_BOOK',
+      status: 'SUCCEEDED',
+      targetId: 'source-1',
+      retryCount: '1',
+      failureReason: '-',
+      duration: '-',
+    })
+  })
+
   it('loads compliance config and complaint rows from backend response', async () => {
     const api = createAdminApi({
       baseUrl: 'http://localhost:8080',

@@ -33,6 +33,12 @@ class CrawlingAdminController(
         @RequestBody request: TriggerCrawlRequest,
     ): PipelineTask = service.crawlBook(bookSourceId, request.html)
 
+    @PostMapping("/tasks/{taskId}/retry")
+    fun retryTask(
+        @PathVariable taskId: String,
+        @RequestBody request: TriggerCrawlRequest,
+    ): PipelineTask = service.retryTask(taskId, request.html)
+
     @GetMapping("/book-sources/{bookSourceId}/raw-chapters")
     fun rawChapters(@PathVariable bookSourceId: String): List<RawChapterContent> = service.rawChapters(bookSourceId)
 }

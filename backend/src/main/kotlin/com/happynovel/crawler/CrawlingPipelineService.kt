@@ -43,9 +43,39 @@ class CrawlingPipelineService(
     }
 
     fun crawlBook(bookSourceId: String, html: String): PipelineTask {
+        return executeCrawlBook(
+            bookSourceId = bookSourceId,
+            html = html,
+            retryCount = 0,
+        )
+    }
+
+    fun retryTask(taskId: String, html: String): PipelineTask {
+        val previous = tasks.first { it.id == taskId }
+        require(previous.status == PipelineTaskStatus.FAILED) { "Only failed tasks can be retried" }
+        return executeCrawlBook(
+            bookSourceId = previous.targetId,
+            html = html,
+            retryCount = previous.retryCount + 1,
+        )
+    }
+
+    private fun executeCrawlBook(bookSourceId: String, html: String, retryCount: Int): PipelineTask {
         val source = bookSources.getValue(bookSourceId)
         val site = siteConfigs.getValue(source.siteConfigId)
         val links = parser.parseChapterLinks(html)
+        if (links.isEmpty()) {
+            val task = PipelineTask(
+                type = PipelineTaskType.CRAWL_BOOK,
+                status = PipelineTaskStatus.FAILED,
+                targetId = bookSourceId,
+                retryCount = retryCount,
+                failureReason = "未解析到章节链接",
+            )
+            tasks += task
+            return task
+        }
+
         val rawChapters = links.mapIndexed { index, link ->
             RawChapterContent(
                 id = "${bookSourceId}-chapter-${index + 1}",
@@ -65,6 +95,7 @@ class CrawlingPipelineService(
             status = PipelineTaskStatus.SUCCEEDED,
             targetId = bookSourceId,
             chaptersFound = links.size,
+            retryCount = retryCount,
         )
         tasks += task
         return task
