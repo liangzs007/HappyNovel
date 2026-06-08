@@ -55,4 +55,12 @@ class MigrationDefinitionTest {
         assertTrue(migration.contains("book_title"))
         assertTrue(migration.contains("idx_copyright_complaint_created_at"))
     }
+
+    @Test
+    fun `fourth migration stores reading event progress`() {
+        val migration = Files.readString(Path.of("src/main/resources/db/migration/V4__reading_event_progress.sql"))
+
+        assertTrue(migration.contains("progress_percent"))
+        assertTrue(migration.contains("idx_reading_event_book_created_at"))
+    }
 }
