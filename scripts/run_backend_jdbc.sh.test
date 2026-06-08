@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+script="scripts/run_backend_jdbc.sh"
+
+test -x "$script"
+grep -Fq "CONTENT_REPOSITORY_MODE" "$script"
+grep -Fq "ADMIN_REPOSITORY_MODE" "$script"
+grep -Fq "AUDIT_REPOSITORY_MODE" "$script"
+grep -Fq "GLOSSARY_REPOSITORY_MODE" "$script"
+grep -Fq "PUBLICATION_REPOSITORY_MODE" "$script"
+grep -Fq "READING_REPOSITORY_MODE" "$script"
+grep -Fq "../gradlew bootRun" "$script"

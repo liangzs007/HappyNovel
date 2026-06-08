@@ -91,6 +91,14 @@ cd android-app
 RUN_API_SMOKE=1 API_BASE_URL=http://localhost:8080 ./scripts/e2e_smoke_test.sh
 ```
 
+JDBC 模式本地后端可以直接使用：
+
+```bash
+./scripts/run_backend_jdbc.sh
+```
+
+该脚本会默认启用内容、后台配置、审计、术语、发布控制和阅读事件的 JDBC 模式，并读取 `DATABASE_URL`、`DATABASE_USERNAME`、`DATABASE_PASSWORD`。
+
 API smoke 会检查首页、广告配置、合规配置、后台广告配置保存、匿名设备创建和阅读事件上报。
 
 ## 文档
