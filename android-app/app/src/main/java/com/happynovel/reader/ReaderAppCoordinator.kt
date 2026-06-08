@@ -60,6 +60,8 @@ class ReaderAppCoordinator(
         )
     }
 
+    fun loadBookshelf(): BookshelfState = localRepository.bookshelf()
+
     fun loadBooks(
         category: String?,
         status: String?,

@@ -16,7 +16,15 @@ data class BookSectionUiState(
 data class BookshelfUiState(
     val title: String,
     val books: List<BookSummary>,
+    val progressByBookId: Map<String, BookshelfProgressUiState>,
     val emptyMessage: String,
+) {
+    fun progressFor(bookId: String): BookshelfProgressUiState? = progressByBookId[bookId]
+}
+
+data class BookshelfProgressUiState(
+    val chapterId: String,
+    val progressLabel: String,
 )
 
 data class CategoriesUiState(
@@ -78,6 +86,12 @@ object ReaderUiStateFactory {
     fun bookshelf(bookshelfState: BookshelfState): BookshelfUiState = BookshelfUiState(
         title = "Bookshelf",
         books = bookshelfState.savedBooks,
+        progressByBookId = bookshelfState.progress.mapValues { (_, progress) ->
+            BookshelfProgressUiState(
+                chapterId = progress.chapterId,
+                progressLabel = "${(progress.percent * 100).roundToInt()}%",
+            )
+        },
         emptyMessage = "No saved books yet.",
     )
 

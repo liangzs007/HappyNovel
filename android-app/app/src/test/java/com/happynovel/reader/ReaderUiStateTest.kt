@@ -25,10 +25,16 @@ class ReaderUiStateTest {
 
     @Test
     fun `bookshelf screen model uses empty english copy`() {
-        val uiState = ReaderUiStateFactory.bookshelf(BookshelfState.empty())
+        val uiState = ReaderUiStateFactory.bookshelf(
+            BookshelfState.empty()
+                .saveBook(book)
+                .updateProgress(ReadingProgress(book.id, "chapter-seed-1", 0.4f)),
+        )
 
         assertEquals("Bookshelf", uiState.title)
-        assertTrue(uiState.books.isEmpty())
+        assertEquals("Dragon Gate", uiState.books.single().title)
+        assertEquals("40%", uiState.progressFor(book.id)?.progressLabel)
+        assertEquals("chapter-seed-1", uiState.progressFor(book.id)?.chapterId)
         assertEquals("No saved books yet.", uiState.emptyMessage)
     }
 

@@ -13,6 +13,7 @@ import android.widget.TextView
 import android.graphics.drawable.GradientDrawable
 import com.happynovel.reader.BookDetailUiState
 import com.happynovel.reader.BookSummary
+import com.happynovel.reader.BookshelfUiState
 import com.happynovel.reader.ChapterCatalogUiState
 import com.happynovel.reader.ChapterRowUiState
 import com.happynovel.reader.FileReaderStateStore
@@ -104,9 +105,16 @@ class MainActivity : Activity() {
 
     private fun LinearLayout.renderBookshelf() {
         addView(header("Bookshelf", "Saved books and reading progress."))
-        addView(sectionCard("Bookshelf") {
-            addView(body("No saved books yet."))
-        })
+        renderLoadState(
+            state = loader.bookshelf(),
+            onContent = { bookshelf ->
+                addView(sectionCard(bookshelf.title) {
+                bookshelf.books.forEach { book ->
+                    addView(bookshelfBookRow(bookshelf, book))
+                }
+                })
+            },
+        )
         addView(bottomTabs("bookshelf"))
     }
 
@@ -254,6 +262,30 @@ class MainActivity : Activity() {
         setPadding(0, dp(12), 0, dp(12))
         setOnClickListener {
             navigationState.openBook(book.id)
+            render()
+        }
+    }
+
+    private fun bookshelfBookRow(bookshelf: BookshelfUiState, book: BookSummary): TextView = TextView(this).apply {
+        val progress = bookshelf.progressFor(book.id)
+        text = buildString {
+            appendLine(book.title)
+            appendLine(book.author)
+            append(book.latestChapterTitle)
+            if (progress != null) {
+                append("\nProgress ${progress.progressLabel}")
+            }
+        }
+        textSize = 15f
+        setTextColor(Color.rgb(55, 65, 81))
+        setLineSpacing(4f, 1f)
+        setPadding(0, dp(12), 0, dp(12))
+        setOnClickListener {
+            if (progress == null) {
+                navigationState.openBook(book.id)
+            } else {
+                navigationState.openReader(book.id, progress.chapterId)
+            }
             render()
         }
     }

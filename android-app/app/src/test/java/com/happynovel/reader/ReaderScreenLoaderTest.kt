@@ -53,6 +53,19 @@ class ReaderScreenLoaderTest {
     }
 
     @Test
+    fun `bookshelf loader returns local saved books`() {
+        val localRepository = InMemoryReaderLocalRepository()
+        localRepository.saveBook(BookSummary("book-seed-1", "Dragon Gate", "Chapter 1"))
+        val loader = ReaderScreenLoader(
+            coordinator = ReaderAppCoordinator(SeedReaderRemoteDataSource(), localRepository),
+        )
+
+        val state = loader.bookshelf()
+
+        assertEquals("Dragon Gate", state.content?.books?.single()?.title)
+    }
+
+    @Test
     fun `reader loader returns unavailable empty state when chapter is missing`() {
         val loader = ReaderScreenLoader(
             coordinator = ReaderAppCoordinator(SeedReaderRemoteDataSource(), InMemoryReaderLocalRepository()),
