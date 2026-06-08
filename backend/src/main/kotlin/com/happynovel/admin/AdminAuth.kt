@@ -1,11 +1,18 @@
 package com.happynovel.admin
 
 import com.happynovel.audit.AuditLogService
+import com.happynovel.audit.JdbcAuditLogService
 import com.happynovel.audit.InMemoryAuditLogService
+import com.happynovel.content.ContentDatabaseClient
+import com.happynovel.content.JdbcTemplateContentDatabaseClient
+import com.happynovel.content.MissingContentDatabaseClient
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.env.Environment
 import org.springframework.http.HttpStatus
+import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -61,9 +68,16 @@ class AdminAuthController(
 }
 
 @Configuration
-class AdminAuthConfiguration {
+class AdminAuthConfiguration(
+    private val environment: Environment,
+    private val jdbcTemplateProvider: ObjectProvider<JdbcTemplate>,
+) {
     @Bean
-    fun auditLogService(): InMemoryAuditLogService = InMemoryAuditLogService()
+    fun auditLogService(): AuditLogService =
+        when (environment.getProperty("app.audit.repository-mode", "SEED").uppercase()) {
+            "JDBC" -> JdbcAuditLogService(databaseClient())
+            else -> InMemoryAuditLogService()
+        }
 
     @Bean
     fun adminAuthService(
@@ -71,4 +85,9 @@ class AdminAuthConfiguration {
         @Value("\${app.admin.password:change-me}") password: String,
         auditLogService: AuditLogService,
     ): AdminAuthService = AdminAuthService(username, password, auditLogService)
+
+    private fun databaseClient(): ContentDatabaseClient =
+        jdbcTemplateProvider.ifAvailable
+            ?.let(::JdbcTemplateContentDatabaseClient)
+            ?: MissingContentDatabaseClient
 }
