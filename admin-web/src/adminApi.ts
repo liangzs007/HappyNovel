@@ -108,6 +108,13 @@ export interface UpdateComplianceConfigRequest {
   adDisclosureText: string
 }
 
+export interface CreateComplaintRequest {
+  source: string
+  bookTitle: string
+  chapterTitle: string
+  note: string
+}
+
 export interface AdminComplaintRow {
   id: string
   source: string
@@ -270,6 +277,19 @@ export function createAdminApi(options: AdminApiOptions = {}) {
       })
       if (!response.ok) {
         throw new Error(`合规配置保存失败：${response.status}`)
+      }
+      const payload = await response.json() as BackendComplianceResponse
+      return toComplianceResult(payload)
+    },
+
+    async createComplaint(request: CreateComplaintRequest): Promise<AdminComplianceResult> {
+      const response = await fetcher(`${baseUrl}/api/admin/compliance/complaints`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(request),
+      })
+      if (!response.ok) {
+        throw new Error(`版权投诉创建失败：${response.status}`)
       }
       const payload = await response.json() as BackendComplianceResponse
       return toComplianceResult(payload)

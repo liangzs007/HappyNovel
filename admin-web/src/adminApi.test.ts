@@ -216,6 +216,61 @@ describe('admin api client', () => {
     ])
   })
 
+  it('creates copyright complaint through backend API', async () => {
+    const api = createAdminApi({
+      baseUrl: 'http://localhost:8080',
+      fetcher: async (url, init) => {
+        expect(url).toBe('http://localhost:8080/api/admin/compliance/complaints')
+        expect(init?.method).toBe('POST')
+        expect(JSON.parse(String(init?.body))).toEqual({
+          source: 'email',
+          bookTitle: '测试书籍',
+          chapterTitle: '第一章',
+          note: '权利人要求下架章节',
+        })
+        return new Response(JSON.stringify({
+          config: {
+            privacyPolicyTitle: 'HappyNovel Privacy Policy',
+            privacyPolicyUrl: 'https://example.com/privacy',
+            termsTitle: 'HappyNovel Terms of Service',
+            termsUrl: 'https://example.com/terms',
+            adDisclosureEnabled: true,
+            adDisclosureText: 'This app may show ads.',
+          },
+          complaints: [
+            {
+              id: 'complaint-1',
+              source: 'email',
+              bookTitle: '测试书籍',
+              chapterTitle: '第一章',
+              status: '待处理',
+              note: '权利人要求下架章节',
+            },
+          ],
+          emptyText: '暂无版权投诉记录',
+        }))
+      },
+    })
+
+    const compliance = await api.createComplaint({
+      source: 'email',
+      bookTitle: '测试书籍',
+      chapterTitle: '第一章',
+      note: '权利人要求下架章节',
+    })
+
+    expect(compliance.complaints).toEqual([
+      {
+        id: 'complaint-1',
+        source: 'email',
+        bookTitle: '测试书籍',
+        chapterTitle: '第一章',
+        status: '待处理',
+        note: '权利人要求下架章节',
+      },
+    ])
+  })
+
   it('loads admin chapter rows from backend response', async () => {
     const api = createAdminApi({
       baseUrl: 'http://localhost:8080',

@@ -37,4 +37,25 @@ class AdminComplianceControllerTest {
         assertEquals(false, response.config.adDisclosureEnabled)
         assertEquals("Ads are disabled for this region.", response.config.adDisclosureText)
     }
+
+    @Test
+    fun `admin can create copyright complaint record`() {
+        val controller = AdminComplianceController(InMemoryCompliancePolicyService())
+
+        val response = controller.createComplaint(
+            CreateCopyrightComplaintRequest(
+                source = "email",
+                bookTitle = "测试书籍",
+                chapterTitle = "第一章",
+                note = "权利人要求下架章节",
+            ),
+        )
+
+        val complaint = response.complaints.single()
+        assertEquals("email", complaint.source)
+        assertEquals("测试书籍", complaint.bookTitle)
+        assertEquals("第一章", complaint.chapterTitle)
+        assertEquals("待处理", complaint.status)
+        assertEquals("权利人要求下架章节", complaint.note)
+    }
 }
