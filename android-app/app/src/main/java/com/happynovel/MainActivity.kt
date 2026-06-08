@@ -16,12 +16,12 @@ import com.happynovel.reader.BookSummary
 import com.happynovel.reader.BookshelfUiState
 import com.happynovel.reader.ChapterCatalogUiState
 import com.happynovel.reader.ChapterRowUiState
-import com.happynovel.reader.FileReaderStateStore
+import com.happynovel.reader.DatabaseReaderLocalRepository
+import com.happynovel.reader.FileReaderLocalDatabase
 import com.happynovel.reader.HomeUiState
 import com.happynovel.reader.ReaderScreenRoute
 import com.happynovel.reader.ReaderNavigation
 import com.happynovel.reader.ReaderNavigationState
-import com.happynovel.reader.PersistedReaderLocalRepository
 import com.happynovel.reader.ReaderAppCoordinator
 import com.happynovel.reader.ReaderRemoteDataSourceFactory
 import com.happynovel.reader.ReaderScreenLoader
@@ -38,8 +38,8 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val remoteDataSource = ReaderRemoteDataSourceFactory.create(BuildConfig.HAPPYNOVEL_API_BASE_URL)
-        val localRepository = PersistedReaderLocalRepository(
-            FileReaderStateStore(File(filesDir, "reader-state.json")),
+        val localRepository = DatabaseReaderLocalRepository(
+            FileReaderLocalDatabase(File(filesDir, "reader-local-db.json")),
         )
         coordinator = ReaderAppCoordinator(remoteDataSource, localRepository)
         loader = ReaderScreenLoader(coordinator)
