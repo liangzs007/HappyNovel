@@ -42,6 +42,10 @@ class HttpReaderRemoteDataSource(
     override fun chapterContent(chapterId: String): AppChapterContentDto =
         parseChapterContent(client.get(routes.chapterContent(chapterId)))
 
+    override fun adConfig(): AppAdConfigDto = parseAdConfig(client.get(routes.adConfig()))
+
+    override fun complianceConfig(): AppComplianceConfigDto = parseComplianceConfig(client.get(routes.complianceConfig()))
+
     private fun parseHome(json: String): AppHomeResponseDto {
         val root = JSONObject(json)
         return AppHomeResponseDto(
@@ -86,6 +90,25 @@ class HttpReaderRemoteDataSource(
             title = root.getString("title"),
             language = root.getString("language"),
             paragraphs = root.getJSONArray("paragraphs").mapStrings(),
+        )
+    }
+
+    private fun parseAdConfig(json: String): AppAdConfigDto {
+        val root = JSONObject(json)
+        return AppAdConfigDto(
+            enabled = root.getBoolean("enabled"),
+            readerBannerEnabled = root.getBoolean("readerBannerEnabled"),
+            interstitialEveryChapters = root.getInt("interstitialEveryChapters"),
+        )
+    }
+
+    private fun parseComplianceConfig(json: String): AppComplianceConfigDto {
+        val root = JSONObject(json)
+        return AppComplianceConfigDto(
+            privacyPolicyTitle = root.getString("privacyPolicyTitle"),
+            termsTitle = root.getString("termsTitle"),
+            adDisclosureEnabled = root.getBoolean("adDisclosureEnabled"),
+            adDisclosureText = root.getString("adDisclosureText"),
         )
     }
 

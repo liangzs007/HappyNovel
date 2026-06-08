@@ -46,6 +46,13 @@ data class AdConfigResponse(
     val interstitialEveryChapters: Int,
 )
 
+data class AppComplianceConfigResponse(
+    val privacyPolicyTitle: String,
+    val termsTitle: String,
+    val adDisclosureEnabled: Boolean,
+    val adDisclosureText: String,
+)
+
 @RestController
 @RequestMapping("/api/app")
 class AppApiController(
@@ -105,5 +112,13 @@ class AppApiController(
         enabled = true,
         readerBannerEnabled = true,
         interstitialEveryChapters = 5,
+    )
+
+    @GetMapping("/compliance-config")
+    fun complianceConfig(): AppComplianceConfigResponse = AppComplianceConfigResponse(
+        privacyPolicyTitle = "HappyNovel Privacy Policy",
+        termsTitle = "HappyNovel Terms of Service",
+        adDisclosureEnabled = true,
+        adDisclosureText = "This app may show ads to support translated novel reading.",
     )
 }

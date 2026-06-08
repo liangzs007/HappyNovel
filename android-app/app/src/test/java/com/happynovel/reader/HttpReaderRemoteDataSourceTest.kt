@@ -15,6 +15,8 @@ class HttpReaderRemoteDataSourceTest {
                 "https://api.example.test/api/app/books/book-seed-1" to detailJson,
                 "https://api.example.test/api/app/books/book-seed-1/chapters" to catalogJson,
                 "https://api.example.test/api/app/chapters/chapter-seed-1" to chapterJson,
+                "https://api.example.test/api/app/ad-config" to adConfigJson,
+                "https://api.example.test/api/app/compliance-config" to complianceConfigJson,
             ),
         )
         val dataSource = HttpReaderRemoteDataSource(
@@ -28,6 +30,8 @@ class HttpReaderRemoteDataSourceTest {
         assertEquals("Dragon Gate", dataSource.bookDetail("book-seed-1").title)
         assertEquals("chapter-seed-1", dataSource.chapterCatalog("book-seed-1").chapters.single().id)
         assertTrue(dataSource.chapterContent("chapter-seed-1").paragraphs.first().contains("Azure Cloud"))
+        assertEquals(5, dataSource.adConfig().interstitialEveryChapters)
+        assertEquals("HappyNovel Privacy Policy", dataSource.complianceConfig().privacyPolicyTitle)
     }
 }
 
@@ -107,5 +111,22 @@ const val chapterJson = """
   "title": "Chapter 1: Azure Cloud Sect",
   "language": "en",
   "paragraphs": ["The morning bell echoed across Azure Cloud Sect."]
+}
+"""
+
+const val adConfigJson = """
+{
+  "enabled": true,
+  "readerBannerEnabled": true,
+  "interstitialEveryChapters": 5
+}
+"""
+
+const val complianceConfigJson = """
+{
+  "privacyPolicyTitle": "HappyNovel Privacy Policy",
+  "termsTitle": "HappyNovel Terms of Service",
+  "adDisclosureEnabled": true,
+  "adDisclosureText": "This app may show ads to support translated novel reading."
 }
 """

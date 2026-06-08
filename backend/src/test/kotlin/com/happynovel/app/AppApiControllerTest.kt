@@ -53,4 +53,17 @@ class AppApiControllerTest {
         assertEquals("en", response.language)
         assertTrue(response.paragraphs.first().contains("Azure Cloud"))
     }
+
+    @Test
+    fun `app config endpoints expose ads and compliance metadata`() {
+        val adConfig = controller.adConfig()
+        val compliance = controller.complianceConfig()
+
+        assertEquals(true, adConfig.enabled)
+        assertEquals(true, adConfig.readerBannerEnabled)
+        assertEquals(5, adConfig.interstitialEveryChapters)
+        assertEquals("HappyNovel Privacy Policy", compliance.privacyPolicyTitle)
+        assertEquals("HappyNovel Terms of Service", compliance.termsTitle)
+        assertEquals(true, compliance.adDisclosureEnabled)
+    }
 }

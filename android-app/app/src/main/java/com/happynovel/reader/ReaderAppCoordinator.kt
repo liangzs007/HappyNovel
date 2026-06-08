@@ -17,6 +17,19 @@ interface ReaderRemoteDataSource {
     fun chapterCatalog(bookId: String): AppChapterCatalogResponseDto
 
     fun chapterContent(chapterId: String): AppChapterContentDto
+
+    fun adConfig(): AppAdConfigDto = AppAdConfigDto(
+        enabled = false,
+        readerBannerEnabled = false,
+        interstitialEveryChapters = 0,
+    )
+
+    fun complianceConfig(): AppComplianceConfigDto = AppComplianceConfigDto(
+        privacyPolicyTitle = "HappyNovel Privacy Policy",
+        termsTitle = "HappyNovel Terms of Service",
+        adDisclosureEnabled = false,
+        adDisclosureText = "",
+    )
 }
 
 data class CategoriesState(
