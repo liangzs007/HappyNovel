@@ -102,6 +102,17 @@ class ReaderUiStateTest {
                 chapter = ChapterContent("chapter-seed-1", "Chapter 1", listOf("First paragraph.")),
                 settings = ReaderSettings.default().withFontSize(20),
                 progress = ReadingProgress("book-seed-1", "chapter-seed-1", 0.4f),
+                adConfig = AppAdConfigDto(
+                    enabled = true,
+                    readerBannerEnabled = true,
+                    interstitialEveryChapters = 5,
+                ),
+                complianceConfig = AppComplianceConfigDto(
+                    privacyPolicyTitle = "HappyNovel Privacy Policy",
+                    termsTitle = "HappyNovel Terms of Service",
+                    adDisclosureEnabled = true,
+                    adDisclosureText = "This app may show ads to support translated novel reading.",
+                ),
             ),
         )
 
@@ -111,6 +122,8 @@ class ReaderUiStateTest {
         assertEquals(ReaderTheme.LIGHT, uiState.theme)
         assertEquals("20sp", uiState.fontSizeLabel)
         assertEquals("40%", uiState.progressLabel)
+        assertEquals("Ad placeholder", uiState.readerAdLabel)
+        assertEquals("This app may show ads to support translated novel reading.", uiState.adDisclosureText)
     }
 
     private val book = BookSummary(

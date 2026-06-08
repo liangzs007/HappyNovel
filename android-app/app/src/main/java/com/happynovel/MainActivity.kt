@@ -186,6 +186,12 @@ class MainActivity : Activity() {
                     reader.paragraphs.forEach { paragraph ->
                         addView(readerParagraph(paragraph, reader.fontSizeSp, reader.theme))
                     }
+                    reader.readerAdLabel?.let { label ->
+                        addView(adPlaceholder(label, reader.theme))
+                    }
+                    reader.adDisclosureText?.let { disclosure ->
+                        addView(readerFootnote(disclosure, reader.theme))
+                    }
                     addView(actionButton("Mark Chapter Read") {
                         coordinator.updateReadingProgress(bookId, chapterId, 1f)
                         render()
@@ -296,6 +302,32 @@ class MainActivity : Activity() {
         setTextColor(if (theme == ReaderTheme.DARK) Color.rgb(230, 232, 236) else Color.rgb(55, 65, 81))
         setLineSpacing(6f, 1.15f)
         setPadding(0, dp(12), 0, 0)
+    }
+
+    private fun adPlaceholder(text: String, theme: ReaderTheme): TextView = TextView(this).apply {
+        this.text = text
+        textSize = 13f
+        gravity = Gravity.CENTER
+        setTextColor(if (theme == ReaderTheme.DARK) Color.rgb(198, 208, 222) else Color.rgb(82, 97, 116))
+        setPadding(dp(12), dp(12), dp(12), dp(12))
+        background = roundedBackground(
+            color = if (theme == ReaderTheme.DARK) Color.rgb(42, 51, 64) else Color.rgb(239, 243, 248),
+            radius = dp(8),
+            strokeColor = if (theme == ReaderTheme.DARK) Color.rgb(82, 94, 112) else Color.rgb(216, 224, 233),
+        )
+        layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+        ).apply {
+            topMargin = dp(16)
+        }
+    }
+
+    private fun readerFootnote(text: String, theme: ReaderTheme): TextView = TextView(this).apply {
+        this.text = text
+        textSize = 12f
+        setTextColor(if (theme == ReaderTheme.DARK) Color.rgb(163, 174, 190) else Color.rgb(91, 101, 116))
+        setPadding(0, dp(8), 0, 0)
     }
 
     private fun bookRow(book: BookSummary): TextView = TextView(this).apply {

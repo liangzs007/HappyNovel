@@ -57,6 +57,8 @@ data class ReaderScreenState(
     val chapter: ChapterContent?,
     val settings: ReaderSettings,
     val progress: ReadingProgress?,
+    val adConfig: AppAdConfigDto,
+    val complianceConfig: AppComplianceConfigDto,
 )
 
 class ReaderAppCoordinator(
@@ -152,6 +154,8 @@ class ReaderAppCoordinator(
         chapter = localRepository.cachedChapter(chapterId),
         settings = localRepository.settings(),
         progress = localRepository.bookshelf().progressFor(bookId),
+        adConfig = remoteDataSource.adConfig(),
+        complianceConfig = remoteDataSource.complianceConfig(),
     )
 
     private fun updateSettings(transform: (ReaderSettings) -> ReaderSettings) {

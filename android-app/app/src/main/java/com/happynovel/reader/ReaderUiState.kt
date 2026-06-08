@@ -71,6 +71,8 @@ data class ReaderUiState(
     val theme: ReaderTheme,
     val fontSizeLabel: String,
     val progressLabel: String,
+    val readerAdLabel: String?,
+    val adDisclosureText: String?,
 )
 
 object ReaderUiStateFactory {
@@ -141,5 +143,13 @@ object ReaderUiStateFactory {
         theme = readerState.settings.theme,
         fontSizeLabel = "${readerState.settings.fontSizeSp}sp",
         progressLabel = "${((readerState.progress?.percent ?: 0f) * 100).roundToInt()}%",
+        readerAdLabel = if (readerState.adConfig.enabled && readerState.adConfig.readerBannerEnabled) {
+            "Ad placeholder"
+        } else {
+            null
+        },
+        adDisclosureText = readerState.complianceConfig.adDisclosureText.takeIf {
+            readerState.complianceConfig.adDisclosureEnabled && it.isNotBlank()
+        },
     )
 }
