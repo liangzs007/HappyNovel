@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { adminNavigation, adminPages, dashboardMetrics } from './adminModel'
+import { adminNavigation, adminPages, bookRowCells, dashboardMetrics } from './adminModel'
 
 describe('admin console model', () => {
   it('defines all MVP navigation entries in Chinese', () => {
@@ -27,5 +27,29 @@ describe('admin console model', () => {
     expect(adminPages.chapters.tableColumns).toContain('翻译状态')
     expect(adminPages.tasks.tableColumns).toContain('失败原因')
     expect(adminPages.compliance.emptyText).toBe('暂无版权投诉记录')
+  })
+
+  it('maps admin book rows to Chinese table cells', () => {
+    expect(bookRowCells({
+      id: 'book-admin-1',
+      title: 'Dragon Gate',
+      author: 'Happy Novel Team',
+      sourceSite: '-',
+      categories: '-',
+      status: 'ongoing',
+      publishStatus: '已发布',
+      recommendationWeight: '0',
+      latestChapterTitle: 'Chapter 2: The Trial',
+      updatedAt: '2026-06-08T00:00:00Z',
+    })).toEqual([
+      'Dragon Gate',
+      'Happy Novel Team',
+      '-',
+      '-',
+      'ongoing',
+      '已发布',
+      '0',
+      '查看',
+    ])
   })
 })

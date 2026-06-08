@@ -29,6 +29,19 @@ export interface AdminPageDefinition {
   emptyText: string
 }
 
+export interface AdminBookTableRow {
+  id: string
+  title: string
+  author: string
+  sourceSite: string
+  categories: string
+  status: string
+  publishStatus: string
+  recommendationWeight: string
+  latestChapterTitle: string
+  updatedAt: string
+}
+
 export const adminNavigation: AdminNavItem[] = [
   { key: 'dashboard', label: '仪表盘' },
   { key: 'sites', label: '站点管理' },
@@ -120,4 +133,17 @@ export const adminPages: Record<AdminPageKey, AdminPageDefinition> = {
     tableColumns: ['操作人', '操作类型', '目标对象', '摘要', '操作时间'],
     emptyText: '暂无审计记录。',
   },
+}
+
+export function bookRowCells(book: AdminBookTableRow): string[] {
+  return [
+    book.title,
+    book.author,
+    book.sourceSite,
+    book.categories,
+    book.status,
+    book.publishStatus,
+    book.recommendationWeight,
+    '查看',
+  ]
 }

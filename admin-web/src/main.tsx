@@ -1,7 +1,10 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { adminNavigation, adminPages, dashboardMetrics, type AdminPageKey } from './adminModel'
+import { createAdminApi, type AdminBooksResult } from './adminApi'
+import { adminNavigation, adminPages, bookRowCells, dashboardMetrics, type AdminPageKey } from './adminModel'
 import './styles.css'
+
+const adminApi = createAdminApi()
 
 function LoginPanel() {
   return (
@@ -38,8 +41,20 @@ function Dashboard() {
   )
 }
 
-function ManagementPage({ pageKey }: { pageKey: AdminPageKey }) {
+function ManagementPage({
+  pageKey,
+  booksResult,
+  isBooksLoading,
+  booksError,
+}: {
+  pageKey: AdminPageKey
+  booksResult: AdminBooksResult | null
+  isBooksLoading: boolean
+  booksError: string | null
+}) {
   const page = adminPages[pageKey]
+  const isBooksPage = pageKey === 'books'
+  const bookRows = booksResult?.books ?? []
 
   return (
     <section className="page-panel">
@@ -69,9 +84,30 @@ function ManagementPage({ pageKey }: { pageKey: AdminPageKey }) {
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td colSpan={page.tableColumns.length} className="empty-state">{page.emptyText}</td>
-            </tr>
+            {isBooksPage && isBooksLoading ? (
+              <tr>
+                <td colSpan={page.tableColumns.length} className="empty-state">正在加载书籍列表...</td>
+              </tr>
+            ) : null}
+            {isBooksPage && booksError ? (
+              <tr>
+                <td colSpan={page.tableColumns.length} className="empty-state">{booksError}</td>
+              </tr>
+            ) : null}
+            {isBooksPage && !isBooksLoading && !booksError && bookRows.length > 0
+              ? bookRows.map((book) => (
+                <tr key={book.id}>
+                  {bookRowCells(book).map((cell, index) => <td key={`${book.id}-${index}`}>{cell}</td>)}
+                </tr>
+              ))
+              : null}
+            {!isBooksPage || (!isBooksLoading && !booksError && bookRows.length === 0) ? (
+              <tr>
+                <td colSpan={page.tableColumns.length} className="empty-state">
+                  {isBooksPage ? booksResult?.emptyText ?? page.emptyText : page.emptyText}
+                </td>
+              </tr>
+            ) : null}
           </tbody>
         </table>
       </div>
@@ -81,7 +117,23 @@ function ManagementPage({ pageKey }: { pageKey: AdminPageKey }) {
 
 function App() {
   const [activePage, setActivePage] = useState<AdminPageKey>('dashboard')
+  const [booksResult, setBooksResult] = useState<AdminBooksResult | null>(null)
+  const [isBooksLoading, setBooksLoading] = useState(false)
+  const [booksError, setBooksError] = useState<string | null>(null)
   const page = adminPages[activePage]
+
+  useEffect(() => {
+    if (activePage !== 'books' || booksResult) {
+      return
+    }
+
+    setBooksLoading(true)
+    setBooksError(null)
+    adminApi.listBooks()
+      .then(setBooksResult)
+      .catch(() => setBooksError('书籍列表加载失败，请检查后端服务。'))
+      .finally(() => setBooksLoading(false))
+  }, [activePage, booksResult])
 
   return (
     <main className="shell">
@@ -109,7 +161,12 @@ function App() {
           <span>管理员：admin</span>
         </header>
         <LoginPanel />
-        <ManagementPage pageKey={activePage} />
+        <ManagementPage
+          pageKey={activePage}
+          booksResult={booksResult}
+          isBooksLoading={isBooksLoading}
+          booksError={booksError}
+        />
       </section>
     </main>
   )
