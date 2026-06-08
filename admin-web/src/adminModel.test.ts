@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { adminNavigation, adminPages, bookRowCells, dashboardMetrics } from './adminModel'
+import { adminNavigation, adminPages, bookRowCells, dashboardMetrics, siteRowCells, taskRowCells } from './adminModel'
 
 describe('admin console model', () => {
   it('defines all MVP navigation entries in Chinese', () => {
@@ -49,6 +49,47 @@ describe('admin console model', () => {
       'ongoing',
       '已发布',
       '0',
+      '查看',
+    ])
+  })
+
+  it('maps crawling site rows to Chinese table cells', () => {
+    expect(siteRowCells({
+      id: 'site-1',
+      name: '示例站点',
+      baseDomain: 'https://novels.example.com',
+      enabledStatus: '启用',
+      rateLimitLabel: '30 次/分钟',
+      maxConcurrency: '2',
+      lastFailureReason: '-',
+    })).toEqual([
+      '示例站点',
+      'https://novels.example.com',
+      '启用',
+      '30 次/分钟',
+      '2',
+      '-',
+      '编辑',
+    ])
+  })
+
+  it('maps crawling task rows to Chinese table cells', () => {
+    expect(taskRowCells({
+      id: 'task-1',
+      type: 'CRAWL_BOOK',
+      status: 'SUCCEEDED',
+      targetId: 'source-1',
+      retryCount: '0',
+      failureReason: '-',
+      duration: '-',
+    })).toEqual([
+      'task-1',
+      'CRAWL_BOOK',
+      'SUCCEEDED',
+      'source-1',
+      '0',
+      '-',
+      '-',
       '查看',
     ])
   })

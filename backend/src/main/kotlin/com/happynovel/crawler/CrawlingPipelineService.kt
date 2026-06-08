@@ -74,6 +74,10 @@ class CrawlingPipelineService(
 
     fun cleanChapters(bookSourceId: String): List<CleanChapterContent> = cleanChaptersBySource[bookSourceId].orEmpty()
 
+    fun siteConfigs(): List<SiteConfig> = siteConfigs.values.toList()
+
+    fun bookSources(): List<BookSource> = bookSources.values.toList()
+
     fun tasks(): List<PipelineTask> = tasks.toList()
 }
 

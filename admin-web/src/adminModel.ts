@@ -42,6 +42,26 @@ export interface AdminBookTableRow {
   updatedAt: string
 }
 
+export interface AdminSiteTableRow {
+  id: string
+  name: string
+  baseDomain: string
+  enabledStatus: string
+  rateLimitLabel: string
+  maxConcurrency: string
+  lastFailureReason: string
+}
+
+export interface AdminTaskTableRow {
+  id: string
+  type: string
+  status: string
+  targetId: string
+  retryCount: string
+  failureReason: string
+  duration: string
+}
+
 export const adminNavigation: AdminNavItem[] = [
   { key: 'dashboard', label: '仪表盘' },
   { key: 'sites', label: '站点管理' },
@@ -144,6 +164,31 @@ export function bookRowCells(book: AdminBookTableRow): string[] {
     book.status,
     book.publishStatus,
     book.recommendationWeight,
+    '查看',
+  ]
+}
+
+export function siteRowCells(site: AdminSiteTableRow): string[] {
+  return [
+    site.name,
+    site.baseDomain,
+    site.enabledStatus,
+    site.rateLimitLabel,
+    site.maxConcurrency,
+    site.lastFailureReason,
+    '编辑',
+  ]
+}
+
+export function taskRowCells(task: AdminTaskTableRow): string[] {
+  return [
+    task.id,
+    task.type,
+    task.status,
+    task.targetId,
+    task.retryCount,
+    task.failureReason,
+    task.duration,
     '查看',
   ]
 }

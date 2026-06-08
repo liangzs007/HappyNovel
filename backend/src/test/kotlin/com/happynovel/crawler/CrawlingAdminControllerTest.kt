@@ -13,6 +13,9 @@ class CrawlingAdminControllerTest {
         val source = controller.createBookSource(defaultBookSource(site.id))
         val task = controller.triggerBookCrawl(source.id, TriggerCrawlRequest(sampleBookHtml()))
 
+        assertEquals(listOf(site), controller.sites())
+        assertEquals(listOf(source), controller.bookSources())
+        assertEquals(listOf(task), controller.tasks())
         assertEquals(PipelineTaskStatus.SUCCEEDED, task.status)
         assertEquals(2, controller.rawChapters(source.id).size)
     }

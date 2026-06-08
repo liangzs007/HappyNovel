@@ -1,7 +1,21 @@
 import React, { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { createAdminApi, type AdminBooksResult } from './adminApi'
-import { adminNavigation, adminPages, bookRowCells, dashboardMetrics, type AdminPageKey } from './adminModel'
+import {
+  createAdminApi,
+  type AdminBookRow,
+  type AdminBooksResult,
+  type AdminSiteRow,
+  type AdminTaskRow,
+} from './adminApi'
+import {
+  adminNavigation,
+  adminPages,
+  bookRowCells,
+  dashboardMetrics,
+  siteRowCells,
+  taskRowCells,
+  type AdminPageKey,
+} from './adminModel'
 import './styles.css'
 
 const adminApi = createAdminApi()
@@ -43,18 +57,12 @@ function Dashboard() {
 
 function ManagementPage({
   pageKey,
-  booksResult,
-  isBooksLoading,
-  booksError,
+  tableState,
 }: {
   pageKey: AdminPageKey
-  booksResult: AdminBooksResult | null
-  isBooksLoading: boolean
-  booksError: string | null
+  tableState: RemoteTableState
 }) {
   const page = adminPages[pageKey]
-  const isBooksPage = pageKey === 'books'
-  const bookRows = booksResult?.books ?? []
 
   return (
     <section className="page-panel">
@@ -84,28 +92,26 @@ function ManagementPage({
             </tr>
           </thead>
           <tbody>
-            {isBooksPage && isBooksLoading ? (
+            {tableState.isLoading ? (
               <tr>
-                <td colSpan={page.tableColumns.length} className="empty-state">正在加载书籍列表...</td>
+                <td colSpan={page.tableColumns.length} className="empty-state">{tableState.loadingText}</td>
               </tr>
             ) : null}
-            {isBooksPage && booksError ? (
+            {tableState.error ? (
               <tr>
-                <td colSpan={page.tableColumns.length} className="empty-state">{booksError}</td>
+                <td colSpan={page.tableColumns.length} className="empty-state">{tableState.error}</td>
               </tr>
             ) : null}
-            {isBooksPage && !isBooksLoading && !booksError && bookRows.length > 0
-              ? bookRows.map((book) => (
-                <tr key={book.id}>
-                  {bookRowCells(book).map((cell, index) => <td key={`${book.id}-${index}`}>{cell}</td>)}
+            {!tableState.isLoading && !tableState.error && tableState.rows.length > 0
+              ? tableState.rows.map((row) => (
+                <tr key={row.id}>
+                  {row.cells.map((cell, index) => <td key={`${row.id}-${index}`}>{cell}</td>)}
                 </tr>
               ))
               : null}
-            {!isBooksPage || (!isBooksLoading && !booksError && bookRows.length === 0) ? (
+            {!tableState.isLoading && !tableState.error && tableState.rows.length === 0 ? (
               <tr>
-                <td colSpan={page.tableColumns.length} className="empty-state">
-                  {isBooksPage ? booksResult?.emptyText ?? page.emptyText : page.emptyText}
-                </td>
+                <td colSpan={page.tableColumns.length} className="empty-state">{tableState.emptyText}</td>
               </tr>
             ) : null}
           </tbody>
@@ -115,11 +121,38 @@ function ManagementPage({
   )
 }
 
+interface RemoteTableRow {
+  id: string
+  cells: string[]
+}
+
+interface RemoteTableState {
+  rows: RemoteTableRow[]
+  isLoading: boolean
+  loadingText: string
+  error: string | null
+  emptyText: string
+}
+
+const idleTableState = (emptyText: string): RemoteTableState => ({
+  rows: [],
+  isLoading: false,
+  loadingText: '正在加载...',
+  error: null,
+  emptyText,
+})
+
 function App() {
   const [activePage, setActivePage] = useState<AdminPageKey>('dashboard')
   const [booksResult, setBooksResult] = useState<AdminBooksResult | null>(null)
   const [isBooksLoading, setBooksLoading] = useState(false)
   const [booksError, setBooksError] = useState<string | null>(null)
+  const [sites, setSites] = useState<AdminSiteRow[] | null>(null)
+  const [isSitesLoading, setSitesLoading] = useState(false)
+  const [sitesError, setSitesError] = useState<string | null>(null)
+  const [tasks, setTasks] = useState<AdminTaskRow[] | null>(null)
+  const [isTasksLoading, setTasksLoading] = useState(false)
+  const [tasksError, setTasksError] = useState<string | null>(null)
   const page = adminPages[activePage]
 
   useEffect(() => {
@@ -134,6 +167,46 @@ function App() {
       .catch(() => setBooksError('书籍列表加载失败，请检查后端服务。'))
       .finally(() => setBooksLoading(false))
   }, [activePage, booksResult])
+
+  useEffect(() => {
+    if (activePage !== 'sites' || sites) {
+      return
+    }
+
+    setSitesLoading(true)
+    setSitesError(null)
+    adminApi.listSites()
+      .then(setSites)
+      .catch(() => setSitesError('站点列表加载失败，请检查后端服务。'))
+      .finally(() => setSitesLoading(false))
+  }, [activePage, sites])
+
+  useEffect(() => {
+    if (activePage !== 'tasks' || tasks) {
+      return
+    }
+
+    setTasksLoading(true)
+    setTasksError(null)
+    adminApi.listTasks()
+      .then(setTasks)
+      .catch(() => setTasksError('任务列表加载失败，请检查后端服务。'))
+      .finally(() => setTasksLoading(false))
+  }, [activePage, tasks])
+
+  const tableState = createTableState({
+    pageKey: activePage,
+    pageEmptyText: page.emptyText,
+    booksResult,
+    isBooksLoading,
+    booksError,
+    sites,
+    isSitesLoading,
+    sitesError,
+    tasks,
+    isTasksLoading,
+    tasksError,
+  })
 
   return (
     <main className="shell">
@@ -163,9 +236,7 @@ function App() {
         <LoginPanel />
         <ManagementPage
           pageKey={activePage}
-          booksResult={booksResult}
-          isBooksLoading={isBooksLoading}
-          booksError={booksError}
+          tableState={tableState}
         />
       </section>
     </main>
@@ -177,3 +248,70 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </React.StrictMode>,
 )
+
+function createTableState({
+  pageKey,
+  pageEmptyText,
+  booksResult,
+  isBooksLoading,
+  booksError,
+  sites,
+  isSitesLoading,
+  sitesError,
+  tasks,
+  isTasksLoading,
+  tasksError,
+}: {
+  pageKey: AdminPageKey
+  pageEmptyText: string
+  booksResult: AdminBooksResult | null
+  isBooksLoading: boolean
+  booksError: string | null
+  sites: AdminSiteRow[] | null
+  isSitesLoading: boolean
+  sitesError: string | null
+  tasks: AdminTaskRow[] | null
+  isTasksLoading: boolean
+  tasksError: string | null
+}): RemoteTableState {
+  if (pageKey === 'books') {
+    return {
+      rows: (booksResult?.books ?? []).map((book: AdminBookRow) => ({
+        id: book.id,
+        cells: bookRowCells(book),
+      })),
+      isLoading: isBooksLoading,
+      loadingText: '正在加载书籍列表...',
+      error: booksError,
+      emptyText: booksResult?.emptyText ?? pageEmptyText,
+    }
+  }
+
+  if (pageKey === 'sites') {
+    return {
+      rows: (sites ?? []).map((site) => ({
+        id: site.id,
+        cells: siteRowCells(site),
+      })),
+      isLoading: isSitesLoading,
+      loadingText: '正在加载站点列表...',
+      error: sitesError,
+      emptyText: pageEmptyText,
+    }
+  }
+
+  if (pageKey === 'tasks') {
+    return {
+      rows: (tasks ?? []).map((task) => ({
+        id: task.id,
+        cells: taskRowCells(task),
+      })),
+      isLoading: isTasksLoading,
+      loadingText: '正在加载任务列表...',
+      error: tasksError,
+      emptyText: pageEmptyText,
+    }
+  }
+
+  return idleTableState(pageEmptyText)
+}

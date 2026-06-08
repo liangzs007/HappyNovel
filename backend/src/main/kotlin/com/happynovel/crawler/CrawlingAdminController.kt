@@ -12,11 +12,20 @@ import org.springframework.web.bind.annotation.RestController
 class CrawlingAdminController(
     private val service: CrawlingPipelineService,
 ) {
+    @GetMapping("/sites")
+    fun sites(): List<SiteConfig> = service.siteConfigs()
+
     @PostMapping("/sites")
     fun createSite(@RequestBody request: CreateSiteConfigRequest): SiteConfig = service.createSiteConfig(request)
 
+    @GetMapping("/book-sources")
+    fun bookSources(): List<BookSource> = service.bookSources()
+
     @PostMapping("/book-sources")
     fun createBookSource(@RequestBody request: CreateBookSourceRequest): BookSource = service.createBookSource(request)
+
+    @GetMapping("/tasks")
+    fun tasks(): List<PipelineTask> = service.tasks()
 
     @PostMapping("/book-sources/{bookSourceId}/crawl")
     fun triggerBookCrawl(

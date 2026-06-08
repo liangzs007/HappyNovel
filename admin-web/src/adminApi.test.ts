@@ -41,4 +41,71 @@ describe('admin api client', () => {
       },
     ])
   })
+
+  it('loads crawling sites from backend response', async () => {
+    const api = createAdminApi({
+      baseUrl: 'http://localhost:8080',
+      fetcher: async (url) => {
+        expect(url).toBe('http://localhost:8080/api/admin/crawling/sites')
+        return new Response(JSON.stringify([
+          {
+            id: 'site-1',
+            name: '示例站点',
+            baseDomain: 'https://novels.example.com',
+            enabled: true,
+            rateLimitPerMinute: 30,
+            maxConcurrency: 2,
+          },
+        ]))
+      },
+    })
+
+    const sites = await api.listSites()
+
+    expect(sites).toEqual([
+      {
+        id: 'site-1',
+        name: '示例站点',
+        baseDomain: 'https://novels.example.com',
+        enabledStatus: '启用',
+        rateLimitLabel: '30 次/分钟',
+        maxConcurrency: '2',
+        lastFailureReason: '-',
+      },
+    ])
+  })
+
+  it('loads crawling tasks from backend response', async () => {
+    const api = createAdminApi({
+      baseUrl: 'http://localhost:8080',
+      fetcher: async (url) => {
+        expect(url).toBe('http://localhost:8080/api/admin/crawling/tasks')
+        return new Response(JSON.stringify([
+          {
+            id: 'task-1',
+            type: 'CRAWL_BOOK',
+            status: 'SUCCEEDED',
+            targetId: 'source-1',
+            retryCount: 0,
+            failureReason: null,
+            chaptersFound: 2,
+          },
+        ]))
+      },
+    })
+
+    const tasks = await api.listTasks()
+
+    expect(tasks).toEqual([
+      {
+        id: 'task-1',
+        type: 'CRAWL_BOOK',
+        status: 'SUCCEEDED',
+        targetId: 'source-1',
+        retryCount: '0',
+        failureReason: '-',
+        duration: '-',
+      },
+    ])
+  })
 })

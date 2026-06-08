@@ -16,6 +16,26 @@ export interface AdminBooksResult {
   emptyText: string
 }
 
+export interface AdminSiteRow {
+  id: string
+  name: string
+  baseDomain: string
+  enabledStatus: string
+  rateLimitLabel: string
+  maxConcurrency: string
+  lastFailureReason: string
+}
+
+export interface AdminTaskRow {
+  id: string
+  type: string
+  status: string
+  targetId: string
+  retryCount: string
+  failureReason: string
+  duration: string
+}
+
 interface BackendBookSummary {
   id: string
   title: string
@@ -28,6 +48,24 @@ interface BackendBookSummary {
 interface BackendAdminBooksResponse {
   books: BackendBookSummary[]
   emptyText: string
+}
+
+interface BackendSiteConfig {
+  id: string
+  name: string
+  baseDomain: string
+  enabled: boolean
+  rateLimitPerMinute: number
+  maxConcurrency: number
+}
+
+interface BackendPipelineTask {
+  id: string
+  type: string
+  status: string
+  targetId: string
+  retryCount: number
+  failureReason?: string | null
 }
 
 interface AdminApiOptions {
@@ -51,6 +89,24 @@ export function createAdminApi(options: AdminApiOptions = {}) {
         books: payload.books.map(toBookRow),
       }
     },
+
+    async listSites(): Promise<AdminSiteRow[]> {
+      const response = await fetcher(`${baseUrl}/api/admin/crawling/sites`)
+      if (!response.ok) {
+        throw new Error(`站点列表加载失败：${response.status}`)
+      }
+      const payload = await response.json() as BackendSiteConfig[]
+      return payload.map(toSiteRow)
+    },
+
+    async listTasks(): Promise<AdminTaskRow[]> {
+      const response = await fetcher(`${baseUrl}/api/admin/crawling/tasks`)
+      if (!response.ok) {
+        throw new Error(`任务列表加载失败：${response.status}`)
+      }
+      const payload = await response.json() as BackendPipelineTask[]
+      return payload.map(toTaskRow)
+    },
   }
 }
 
@@ -66,5 +122,29 @@ function toBookRow(book: BackendBookSummary): AdminBookRow {
     recommendationWeight: '0',
     latestChapterTitle: book.latestChapterTitle ?? '-',
     updatedAt: book.updatedAt ?? '-',
+  }
+}
+
+function toSiteRow(site: BackendSiteConfig): AdminSiteRow {
+  return {
+    id: site.id,
+    name: site.name,
+    baseDomain: site.baseDomain,
+    enabledStatus: site.enabled ? '启用' : '停用',
+    rateLimitLabel: `${site.rateLimitPerMinute} 次/分钟`,
+    maxConcurrency: String(site.maxConcurrency),
+    lastFailureReason: '-',
+  }
+}
+
+function toTaskRow(task: BackendPipelineTask): AdminTaskRow {
+  return {
+    id: task.id,
+    type: task.type,
+    status: task.status,
+    targetId: task.targetId,
+    retryCount: String(task.retryCount),
+    failureReason: task.failureReason || '-',
+    duration: '-',
   }
 }
