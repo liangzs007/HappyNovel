@@ -90,6 +90,15 @@ export interface AdminGlossaryTableRow {
   updatedAt: string
 }
 
+export interface AdminAuditTableRow {
+  id: string
+  actor: string
+  action: string
+  target: string
+  summary: string
+  createdAt: string
+}
+
 export const adminNavigation: AdminNavItem[] = [
   { key: 'dashboard', label: '仪表盘' },
   { key: 'sites', label: '站点管理' },
@@ -252,5 +261,15 @@ export function glossaryRowCells(term: AdminGlossaryTableRow): string[] {
     term.enabledStatus,
     term.updatedAt,
     '编辑',
+  ]
+}
+
+export function auditRowCells(entry: AdminAuditTableRow): string[] {
+  return [
+    entry.actor,
+    entry.action,
+    entry.target,
+    entry.summary,
+    entry.createdAt,
   ]
 }

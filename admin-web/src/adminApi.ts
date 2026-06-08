@@ -65,6 +65,20 @@ export interface AdminGlossaryResult {
   emptyText: string
 }
 
+export interface AdminAuditRow {
+  id: string
+  actor: string
+  action: string
+  target: string
+  summary: string
+  createdAt: string
+}
+
+export interface AdminAuditResult {
+  entries: AdminAuditRow[]
+  emptyText: string
+}
+
 export interface AdminComplianceResult {
   configCards: string[]
   complaints: AdminComplaintRow[]
@@ -153,6 +167,11 @@ interface BackendAdminGlossaryResponse {
   emptyText: string
 }
 
+interface BackendAdminAuditResponse {
+  entries: AdminAuditRow[]
+  emptyText: string
+}
+
 interface AdminApiOptions {
   baseUrl?: string
   fetcher?: typeof fetch
@@ -232,6 +251,14 @@ export function createAdminApi(options: AdminApiOptions = {}) {
         emptyText: payload.emptyText,
         terms: payload.terms.map(toGlossaryTermRow),
       }
+    },
+
+    async listAuditLogs(): Promise<AdminAuditResult> {
+      const response = await fetcher(`${baseUrl}/api/admin/audit`)
+      if (!response.ok) {
+        throw new Error(`审计日志加载失败：${response.status}`)
+      }
+      return await response.json() as BackendAdminAuditResponse
     },
   }
 }

@@ -22,7 +22,7 @@ class AdminAuthControllerTest {
 
         assertEquals("admin", response.username)
         assertTrue(response.token.startsWith("admin-session-"))
-        assertEquals("ADMIN_LOGIN", auditLogService.entries.single().action)
+        assertEquals("ADMIN_LOGIN", auditLogService.entries().single().action)
     }
 
     @Test

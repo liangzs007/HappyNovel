@@ -215,4 +215,40 @@ describe('admin api client', () => {
       },
     ])
   })
+
+  it('loads admin audit rows from backend response', async () => {
+    const api = createAdminApi({
+      baseUrl: 'http://localhost:8080',
+      fetcher: async (url) => {
+        expect(url).toBe('http://localhost:8080/api/admin/audit')
+        return new Response(JSON.stringify({
+          emptyText: '暂无审计记录。',
+          entries: [
+            {
+              id: 'audit-1',
+              actor: 'admin',
+              action: 'BOOK_TAKEDOWN',
+              target: 'book:book-seed-1',
+              summary: '下架测试书籍',
+              createdAt: '2026-06-08T00:00:00Z',
+            },
+          ],
+        }))
+      },
+    })
+
+    const response = await api.listAuditLogs()
+
+    expect(response.emptyText).toBe('暂无审计记录。')
+    expect(response.entries).toEqual([
+      {
+        id: 'audit-1',
+        actor: 'admin',
+        action: 'BOOK_TAKEDOWN',
+        target: 'book:book-seed-1',
+        summary: '下架测试书籍',
+        createdAt: '2026-06-08T00:00:00Z',
+      },
+    ])
+  })
 })

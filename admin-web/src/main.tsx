@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import {
   createAdminApi,
+  type AdminAuditResult,
+  type AdminAuditRow,
   type AdminBookRow,
   type AdminBooksResult,
   type AdminChapterRow,
@@ -15,6 +17,7 @@ import {
 import {
   adminNavigation,
   adminPages,
+  auditRowCells,
   bookRowCells,
   chapterRowCells,
   complaintRowCells,
@@ -168,6 +171,9 @@ function App() {
   const [glossaryResult, setGlossaryResult] = useState<AdminGlossaryResult | null>(null)
   const [isGlossaryLoading, setGlossaryLoading] = useState(false)
   const [glossaryError, setGlossaryError] = useState<string | null>(null)
+  const [auditResult, setAuditResult] = useState<AdminAuditResult | null>(null)
+  const [isAuditLoading, setAuditLoading] = useState(false)
+  const [auditError, setAuditError] = useState<string | null>(null)
   const [sites, setSites] = useState<AdminSiteRow[] | null>(null)
   const [isSitesLoading, setSitesLoading] = useState(false)
   const [sitesError, setSitesError] = useState<string | null>(null)
@@ -217,6 +223,19 @@ function App() {
       .catch(() => setGlossaryError('术语列表加载失败，请检查后端服务。'))
       .finally(() => setGlossaryLoading(false))
   }, [activePage, glossaryResult])
+
+  useEffect(() => {
+    if (activePage !== 'audit' || auditResult) {
+      return
+    }
+
+    setAuditLoading(true)
+    setAuditError(null)
+    adminApi.listAuditLogs()
+      .then(setAuditResult)
+      .catch(() => setAuditError('审计日志加载失败，请检查后端服务。'))
+      .finally(() => setAuditLoading(false))
+  }, [activePage, auditResult])
 
   useEffect(() => {
     if (activePage !== 'sites' || sites) {
@@ -269,6 +288,9 @@ function App() {
     glossaryResult,
     isGlossaryLoading,
     glossaryError,
+    auditResult,
+    isAuditLoading,
+    auditError,
     sites,
     isSitesLoading,
     sitesError,
@@ -334,6 +356,9 @@ function createTableState({
   glossaryResult,
   isGlossaryLoading,
   glossaryError,
+  auditResult,
+  isAuditLoading,
+  auditError,
   sites,
   isSitesLoading,
   sitesError,
@@ -355,6 +380,9 @@ function createTableState({
   glossaryResult: AdminGlossaryResult | null
   isGlossaryLoading: boolean
   glossaryError: string | null
+  auditResult: AdminAuditResult | null
+  isAuditLoading: boolean
+  auditError: string | null
   sites: AdminSiteRow[] | null
   isSitesLoading: boolean
   sitesError: string | null
@@ -401,6 +429,19 @@ function createTableState({
       loadingText: '正在加载术语列表...',
       error: glossaryError,
       emptyText: glossaryResult?.emptyText ?? pageEmptyText,
+    }
+  }
+
+  if (pageKey === 'audit') {
+    return {
+      rows: (auditResult?.entries ?? []).map((entry: AdminAuditRow) => ({
+        id: entry.id,
+        cells: auditRowCells(entry),
+      })),
+      isLoading: isAuditLoading,
+      loadingText: '正在加载审计日志...',
+      error: auditError,
+      emptyText: auditResult?.emptyText ?? pageEmptyText,
     }
   }
 

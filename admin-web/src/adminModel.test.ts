@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   adminNavigation,
   adminPages,
+  auditRowCells,
   bookRowCells,
   chapterRowCells,
   complaintRowCells,
@@ -157,6 +158,23 @@ describe('admin console model', () => {
       '启用',
       '-',
       '编辑',
+    ])
+  })
+
+  it('maps audit rows to Chinese table cells', () => {
+    expect(auditRowCells({
+      id: 'audit-1',
+      actor: 'admin',
+      action: 'BOOK_TAKEDOWN',
+      target: 'book:book-seed-1',
+      summary: '下架测试书籍',
+      createdAt: '2026-06-08T00:00:00Z',
+    })).toEqual([
+      'admin',
+      'BOOK_TAKEDOWN',
+      'book:book-seed-1',
+      '下架测试书籍',
+      '2026-06-08T00:00:00Z',
     ])
   })
 })

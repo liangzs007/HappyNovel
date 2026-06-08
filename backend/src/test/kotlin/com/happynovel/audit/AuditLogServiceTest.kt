@@ -19,6 +19,6 @@ class AuditLogServiceTest {
 
         assertEquals("BOOK_TAKEDOWN", entry.action)
         assertEquals("book-seed-1", entry.targetId)
-        assertTrue(service.entries.contains(entry))
+        assertTrue(service.entries().contains(entry))
     }
 }

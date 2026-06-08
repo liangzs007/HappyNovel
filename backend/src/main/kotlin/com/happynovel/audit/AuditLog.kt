@@ -21,13 +21,11 @@ interface AuditLogService {
         targetId: String,
         summary: String,
     ): AuditLogEntry
+    fun entries(): List<AuditLogEntry>
 }
 
 class InMemoryAuditLogService : AuditLogService {
     private val mutableEntries = mutableListOf<AuditLogEntry>()
-
-    val entries: List<AuditLogEntry>
-        get() = mutableEntries.toList()
 
     override fun record(
         actor: String,
@@ -48,4 +46,6 @@ class InMemoryAuditLogService : AuditLogService {
         mutableEntries += entry
         return entry
     }
+
+    override fun entries(): List<AuditLogEntry> = mutableEntries.toList()
 }
