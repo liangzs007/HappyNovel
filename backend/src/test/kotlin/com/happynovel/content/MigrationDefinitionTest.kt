@@ -75,4 +75,15 @@ class MigrationDefinitionTest {
         assertTrue(migration.contains("insert into chapter_translation"))
         assertTrue(migration.contains("publication_status"))
     }
+
+    @Test
+    fun `sixth migration adds crawler jdbc persistence fields`() {
+        val migration = Files.readString(Path.of("src/main/resources/db/migration/V6__crawler_jdbc_fields.sql"))
+
+        assertTrue(migration.contains("rate_limit_per_minute"))
+        assertTrue(migration.contains("chapter_list_selector"))
+        assertTrue(migration.contains("book_title"))
+        assertTrue(migration.contains("last_checked_at_epoch_minutes"))
+        assertTrue(migration.contains("alter column book_id drop not null"))
+    }
 }

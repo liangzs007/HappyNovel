@@ -27,6 +27,7 @@ app:
   reading:
     repository-mode: ${READING_REPOSITORY_MODE:SEED}
   crawling:
+    repository-mode: ${CRAWLING_REPOSITORY_MODE:SEED}
     scheduler:
       enabled: ${CRAWLING_SCHEDULER_ENABLED:false}
       fixed-delay-ms: ${CRAWLING_SCHEDULER_FIXED_DELAY_MS:60000}

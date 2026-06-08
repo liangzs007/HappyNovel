@@ -2,16 +2,20 @@ package com.happynovel.crawler
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.env.Environment
+import org.springframework.jdbc.core.JdbcTemplate
+import org.springframework.beans.factory.ObjectProvider
+import com.happynovel.content.ContentDatabaseClient
+import com.happynovel.content.JdbcTemplateContentDatabaseClient
+import com.happynovel.content.MissingContentDatabaseClient
 
 class CrawlingPipelineService(
     private val parser: NovelHtmlParser = NovelHtmlParser(),
     private val cleaner: ChapterCleaningService = ChapterCleaningService(QualityCheckService()),
+    private val store: CrawlingStore = InMemoryCrawlingStore(),
 ) {
-    private val siteConfigs = linkedMapOf<String, SiteConfig>()
-    private val bookSources = linkedMapOf<String, BookSource>()
     private val rawChaptersBySource = linkedMapOf<String, MutableList<RawChapterContent>>()
     private val cleanChaptersBySource = linkedMapOf<String, MutableList<CleanChapterContent>>()
-    private val tasks = mutableListOf<PipelineTask>()
 
     fun createSiteConfig(request: CreateSiteConfigRequest): SiteConfig {
         require(request.rateLimitPerMinute > 0) { "rateLimitPerMinute must be positive" }
@@ -26,12 +30,11 @@ class CrawlingPipelineService(
             chapterBodySelector = request.chapterBodySelector,
             adBlocklist = request.adBlocklist,
         )
-        siteConfigs[site.id] = site
-        return site
+        return store.saveSiteConfig(site)
     }
 
     fun createBookSource(request: CreateBookSourceRequest): BookSource {
-        require(siteConfigs.containsKey(request.siteConfigId)) { "siteConfigId not found" }
+        require(store.siteConfig(request.siteConfigId) != null) { "siteConfigId not found" }
         require(request.updateIntervalMinutes > 0) { "updateIntervalMinutes must be positive" }
         val source = BookSource(
             siteConfigId = request.siteConfigId,
@@ -39,19 +42,14 @@ class CrawlingPipelineService(
             sourceUrl = request.sourceUrl,
             updateIntervalMinutes = request.updateIntervalMinutes,
         )
-        bookSources[source.id] = source
-        return source
+        return store.saveBookSource(source)
     }
 
-    fun markBookSourceChecked(bookSourceId: String, checkedAtEpochMinutes: Long): BookSource {
-        val source = bookSources.getValue(bookSourceId)
-        val updated = source.copy(lastCheckedAtEpochMinutes = checkedAtEpochMinutes)
-        bookSources[bookSourceId] = updated
-        return updated
-    }
+    fun markBookSourceChecked(bookSourceId: String, checkedAtEpochMinutes: Long): BookSource =
+        store.saveBookSourceChecked(bookSourceId, checkedAtEpochMinutes)
 
     fun scheduleLatestCrawls(nowEpochMinutes: Long): List<PipelineTask> {
-        val dueSources = bookSources.values.filter { source ->
+        val dueSources = store.bookSources().filter { source ->
             val lastCheckedAt = source.lastCheckedAtEpochMinutes
             val isDue = lastCheckedAt == null || nowEpochMinutes - lastCheckedAt >= source.updateIntervalMinutes
             isDue && !hasOpenLatestCrawlTask(source.id)
@@ -62,13 +60,12 @@ class CrawlingPipelineService(
                 status = PipelineTaskStatus.CREATED,
                 targetId = source.id,
             )
-            tasks += task
-            task
+            store.saveTask(task)
         }
     }
 
     private fun hasOpenLatestCrawlTask(bookSourceId: String): Boolean =
-        tasks.any {
+        store.tasks().any {
             it.type == PipelineTaskType.CRAWL_LATEST &&
                 it.targetId == bookSourceId &&
                 it.status in setOf(PipelineTaskStatus.CREATED, PipelineTaskStatus.RUNNING)
@@ -83,7 +80,7 @@ class CrawlingPipelineService(
     }
 
     fun retryTask(taskId: String, html: String): PipelineTask {
-        val previous = tasks.first { it.id == taskId }
+        val previous = store.tasks().first { it.id == taskId }
         require(previous.status == PipelineTaskStatus.FAILED) { "Only failed tasks can be retried" }
         return executeCrawlBook(
             bookSourceId = previous.targetId,
@@ -93,8 +90,8 @@ class CrawlingPipelineService(
     }
 
     private fun executeCrawlBook(bookSourceId: String, html: String, retryCount: Int): PipelineTask {
-        val source = bookSources.getValue(bookSourceId)
-        val site = siteConfigs.getValue(source.siteConfigId)
+        val source = store.bookSource(bookSourceId) ?: throw NoSuchElementException("Book source not found: $bookSourceId")
+        val site = store.siteConfig(source.siteConfigId) ?: throw NoSuchElementException("Site config not found: ${source.siteConfigId}")
         val links = parser.parseChapterLinks(html)
         if (links.isEmpty()) {
             val task = PipelineTask(
@@ -104,8 +101,7 @@ class CrawlingPipelineService(
                 retryCount = retryCount,
                 failureReason = "未解析到章节链接",
             )
-            tasks += task
-            return task
+            return store.saveTask(task)
         }
 
         val rawChapters = links.mapIndexed { index, link ->
@@ -129,23 +125,36 @@ class CrawlingPipelineService(
             chaptersFound = links.size,
             retryCount = retryCount,
         )
-        tasks += task
-        return task
+        return store.saveTask(task)
     }
 
     fun rawChapters(bookSourceId: String): List<RawChapterContent> = rawChaptersBySource[bookSourceId].orEmpty()
 
     fun cleanChapters(bookSourceId: String): List<CleanChapterContent> = cleanChaptersBySource[bookSourceId].orEmpty()
 
-    fun siteConfigs(): List<SiteConfig> = siteConfigs.values.toList()
+    fun siteConfigs(): List<SiteConfig> = store.siteConfigs()
 
-    fun bookSources(): List<BookSource> = bookSources.values.toList()
+    fun bookSources(): List<BookSource> = store.bookSources()
 
-    fun tasks(): List<PipelineTask> = tasks.toList()
+    fun tasks(): List<PipelineTask> = store.tasks()
 }
 
 @Configuration
-class CrawlingPipelineConfiguration {
+class CrawlingPipelineConfiguration(
+    private val environment: Environment,
+    private val jdbcTemplateProvider: ObjectProvider<JdbcTemplate>,
+) {
     @Bean
-    fun crawlingPipelineService(): CrawlingPipelineService = CrawlingPipelineService()
+    fun crawlingPipelineService(): CrawlingPipelineService = CrawlingPipelineService(store = crawlingStore())
+
+    private fun crawlingStore(): CrawlingStore =
+        when (environment.getProperty("app.crawling.repository-mode", "SEED").uppercase()) {
+            "JDBC" -> JdbcCrawlingStore(databaseClient())
+            else -> InMemoryCrawlingStore()
+        }
+
+    private fun databaseClient(): ContentDatabaseClient =
+        jdbcTemplateProvider.ifAvailable
+            ?.let(::JdbcTemplateContentDatabaseClient)
+            ?: MissingContentDatabaseClient
 }
