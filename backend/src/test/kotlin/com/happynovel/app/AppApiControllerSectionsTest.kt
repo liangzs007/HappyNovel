@@ -1,5 +1,6 @@
 package com.happynovel.app
 
+import com.happynovel.admin.InMemoryCompliancePolicyService
 import com.happynovel.content.BookDetail
 import com.happynovel.content.BookSummary
 import com.happynovel.content.Category
@@ -10,7 +11,7 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
 class AppApiControllerSectionsTest {
-    private val controller = AppApiController(FakeSectionContentRepository())
+    private val controller = AppApiController(FakeSectionContentRepository(), InMemoryCompliancePolicyService())
 
     @Test
     fun `home endpoint uses distinct repository sections`() {

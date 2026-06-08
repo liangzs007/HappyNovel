@@ -99,6 +99,15 @@ export interface AdminComplianceResult {
   emptyText: string
 }
 
+export interface UpdateComplianceConfigRequest {
+  privacyPolicyTitle: string
+  privacyPolicyUrl: string
+  termsTitle: string
+  termsUrl: string
+  adDisclosureEnabled: boolean
+  adDisclosureText: string
+}
+
 export interface AdminComplaintRow {
   id: string
   source: string
@@ -237,15 +246,20 @@ export function createAdminApi(options: AdminApiOptions = {}) {
         throw new Error(`合规配置加载失败：${response.status}`)
       }
       const payload = await response.json() as BackendComplianceResponse
-      return {
-        configCards: [
-          `隐私政策：${payload.config.privacyPolicyTitle}`,
-          `服务条款：${payload.config.termsTitle}`,
-          `广告披露：${payload.config.adDisclosureEnabled ? '已启用' : '未启用'}`,
-        ],
-        complaints: payload.complaints,
-        emptyText: payload.emptyText,
+      return toComplianceResult(payload)
+    },
+
+    async updateCompliance(request: UpdateComplianceConfigRequest): Promise<AdminComplianceResult> {
+      const response = await fetcher(`${baseUrl}/api/admin/compliance`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(request),
+      })
+      if (!response.ok) {
+        throw new Error(`合规配置保存失败：${response.status}`)
       }
+      const payload = await response.json() as BackendComplianceResponse
+      return toComplianceResult(payload)
     },
 
     async listChapters(bookId = 'book-seed-1'): Promise<AdminChaptersResult> {
@@ -326,6 +340,18 @@ function toTaskRow(task: BackendPipelineTask): AdminTaskRow {
     retryCount: String(task.retryCount),
     failureReason: task.failureReason || '-',
     duration: '-',
+  }
+}
+
+function toComplianceResult(payload: BackendComplianceResponse): AdminComplianceResult {
+  return {
+    configCards: [
+      `隐私政策：${payload.config.privacyPolicyTitle}`,
+      `服务条款：${payload.config.termsTitle}`,
+      `广告披露：${payload.config.adDisclosureEnabled ? '已启用' : '未启用'}`,
+    ],
+    complaints: payload.complaints,
+    emptyText: payload.emptyText,
   }
 }
 

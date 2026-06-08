@@ -1,5 +1,6 @@
 package com.happynovel.app
 
+import com.happynovel.admin.InMemoryCompliancePolicyService
 import com.happynovel.content.BookDetail
 import com.happynovel.content.BookSummary
 import com.happynovel.content.Category
@@ -13,7 +14,7 @@ class AppApiBookListTest {
     @Test
     fun `book list endpoint passes category status sort and limit to repository`() {
         val repository = RecordingBrowseContentRepository()
-        val controller = AppApiController(repository)
+        val controller = AppApiController(repository, InMemoryCompliancePolicyService())
 
         val response = controller.books(
             category = "fantasy",

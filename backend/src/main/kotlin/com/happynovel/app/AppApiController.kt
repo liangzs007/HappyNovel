@@ -1,5 +1,6 @@
 package com.happynovel.app
 
+import com.happynovel.admin.CompliancePolicyService
 import com.happynovel.content.BookDetail
 import com.happynovel.content.BookSummary
 import com.happynovel.content.Category
@@ -57,6 +58,7 @@ data class AppComplianceConfigResponse(
 @RequestMapping("/api/app")
 class AppApiController(
     private val contentRepository: ContentRepository,
+    private val compliancePolicyService: CompliancePolicyService,
 ) {
     @GetMapping("/home")
     fun home(): HomeResponse {
@@ -115,10 +117,13 @@ class AppApiController(
     )
 
     @GetMapping("/compliance-config")
-    fun complianceConfig(): AppComplianceConfigResponse = AppComplianceConfigResponse(
-        privacyPolicyTitle = "HappyNovel Privacy Policy",
-        termsTitle = "HappyNovel Terms of Service",
-        adDisclosureEnabled = true,
-        adDisclosureText = "This app may show ads to support translated novel reading.",
-    )
+    fun complianceConfig(): AppComplianceConfigResponse {
+        val config = compliancePolicyService.current()
+        return AppComplianceConfigResponse(
+            privacyPolicyTitle = config.privacyPolicyTitle,
+            termsTitle = config.termsTitle,
+            adDisclosureEnabled = config.adDisclosureEnabled,
+            adDisclosureText = config.adDisclosureText,
+        )
+    }
 }

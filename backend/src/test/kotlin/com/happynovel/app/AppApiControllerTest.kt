@@ -1,5 +1,7 @@
 package com.happynovel.app
 
+import com.happynovel.admin.InMemoryCompliancePolicyService
+import com.happynovel.admin.UpdateComplianceConfigRequest
 import com.happynovel.content.InMemoryContentRepository
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
@@ -7,7 +9,8 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class AppApiControllerTest {
-    private val controller = AppApiController(InMemoryContentRepository.withSeedData())
+    private val compliancePolicyService = InMemoryCompliancePolicyService()
+    private val controller = AppApiController(InMemoryContentRepository.withSeedData(), compliancePolicyService)
 
     @Test
     fun `home endpoint returns published sections`() {
@@ -65,5 +68,26 @@ class AppApiControllerTest {
         assertEquals("HappyNovel Privacy Policy", compliance.privacyPolicyTitle)
         assertEquals("HappyNovel Terms of Service", compliance.termsTitle)
         assertEquals(true, compliance.adDisclosureEnabled)
+    }
+
+    @Test
+    fun `app compliance config reflects admin policy updates`() {
+        compliancePolicyService.update(
+            UpdateComplianceConfigRequest(
+                privacyPolicyTitle = "Updated Privacy",
+                privacyPolicyUrl = "https://example.com/updated-privacy",
+                termsTitle = "Updated Terms",
+                termsUrl = "https://example.com/updated-terms",
+                adDisclosureEnabled = false,
+                adDisclosureText = "Ads are disabled for this region.",
+            ),
+        )
+
+        val compliance = controller.complianceConfig()
+
+        assertEquals("Updated Privacy", compliance.privacyPolicyTitle)
+        assertEquals("Updated Terms", compliance.termsTitle)
+        assertEquals(false, compliance.adDisclosureEnabled)
+        assertEquals("Ads are disabled for this region.", compliance.adDisclosureText)
     }
 }

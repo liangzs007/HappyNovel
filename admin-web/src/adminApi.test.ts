@@ -140,6 +140,51 @@ describe('admin api client', () => {
     expect(compliance.emptyText).toBe('暂无版权投诉记录')
   })
 
+  it('updates compliance config through backend API', async () => {
+    const api = createAdminApi({
+      baseUrl: 'http://localhost:8080',
+      fetcher: async (url, init) => {
+        expect(url).toBe('http://localhost:8080/api/admin/compliance')
+        expect(init?.method).toBe('PUT')
+        expect(JSON.parse(String(init?.body))).toEqual({
+          privacyPolicyTitle: 'Updated Privacy',
+          privacyPolicyUrl: 'https://example.com/privacy',
+          termsTitle: 'Updated Terms',
+          termsUrl: 'https://example.com/terms',
+          adDisclosureEnabled: false,
+          adDisclosureText: 'Ads are disabled.',
+        })
+        return new Response(JSON.stringify({
+          config: {
+            privacyPolicyTitle: 'Updated Privacy',
+            privacyPolicyUrl: 'https://example.com/privacy',
+            termsTitle: 'Updated Terms',
+            termsUrl: 'https://example.com/terms',
+            adDisclosureEnabled: false,
+            adDisclosureText: 'Ads are disabled.',
+          },
+          complaints: [],
+          emptyText: '暂无版权投诉记录',
+        }))
+      },
+    })
+
+    const compliance = await api.updateCompliance({
+      privacyPolicyTitle: 'Updated Privacy',
+      privacyPolicyUrl: 'https://example.com/privacy',
+      termsTitle: 'Updated Terms',
+      termsUrl: 'https://example.com/terms',
+      adDisclosureEnabled: false,
+      adDisclosureText: 'Ads are disabled.',
+    })
+
+    expect(compliance.configCards).toEqual([
+      '隐私政策：Updated Privacy',
+      '服务条款：Updated Terms',
+      '广告披露：未启用',
+    ])
+  })
+
   it('loads admin chapter rows from backend response', async () => {
     const api = createAdminApi({
       baseUrl: 'http://localhost:8080',
