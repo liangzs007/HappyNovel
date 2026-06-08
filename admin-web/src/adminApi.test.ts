@@ -251,4 +251,40 @@ describe('admin api client', () => {
       },
     ])
   })
+
+  it('loads admin recommendation rows from backend response', async () => {
+    const api = createAdminApi({
+      baseUrl: 'http://localhost:8080',
+      fetcher: async (url) => {
+        expect(url).toBe('http://localhost:8080/api/admin/recommendations')
+        return new Response(JSON.stringify({
+          emptyText: '暂无推荐配置。',
+          items: [
+            {
+              id: 'category-fantasy',
+              name: 'Fantasy',
+              type: '分类',
+              boundBook: '-',
+              sortWeight: '0',
+              enabledStatus: '启用',
+            },
+          ],
+        }))
+      },
+    })
+
+    const response = await api.listRecommendations()
+
+    expect(response.emptyText).toBe('暂无推荐配置。')
+    expect(response.items).toEqual([
+      {
+        id: 'category-fantasy',
+        name: 'Fantasy',
+        type: '分类',
+        boundBook: '-',
+        sortWeight: '0',
+        enabledStatus: '启用',
+      },
+    ])
+  })
 })

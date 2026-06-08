@@ -99,6 +99,15 @@ export interface AdminAuditTableRow {
   createdAt: string
 }
 
+export interface AdminRecommendationTableRow {
+  id: string
+  name: string
+  type: string
+  boundBook: string
+  sortWeight: string
+  enabledStatus: string
+}
+
 export const adminNavigation: AdminNavItem[] = [
   { key: 'dashboard', label: '仪表盘' },
   { key: 'sites', label: '站点管理' },
@@ -271,5 +280,16 @@ export function auditRowCells(entry: AdminAuditTableRow): string[] {
     entry.target,
     entry.summary,
     entry.createdAt,
+  ]
+}
+
+export function recommendationRowCells(item: AdminRecommendationTableRow): string[] {
+  return [
+    item.name,
+    item.type,
+    item.boundBook,
+    item.sortWeight,
+    item.enabledStatus,
+    '编辑',
   ]
 }

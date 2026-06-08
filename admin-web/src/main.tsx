@@ -11,6 +11,8 @@ import {
   type AdminComplianceResult,
   type AdminGlossaryResult,
   type AdminGlossaryTermRow,
+  type AdminRecommendationRow,
+  type AdminRecommendationsResult,
   type AdminSiteRow,
   type AdminTaskRow,
 } from './adminApi'
@@ -23,6 +25,7 @@ import {
   complaintRowCells,
   dashboardMetrics,
   glossaryRowCells,
+  recommendationRowCells,
   siteRowCells,
   taskRowCells,
   type AdminPageKey,
@@ -174,6 +177,9 @@ function App() {
   const [auditResult, setAuditResult] = useState<AdminAuditResult | null>(null)
   const [isAuditLoading, setAuditLoading] = useState(false)
   const [auditError, setAuditError] = useState<string | null>(null)
+  const [recommendationsResult, setRecommendationsResult] = useState<AdminRecommendationsResult | null>(null)
+  const [isRecommendationsLoading, setRecommendationsLoading] = useState(false)
+  const [recommendationsError, setRecommendationsError] = useState<string | null>(null)
   const [sites, setSites] = useState<AdminSiteRow[] | null>(null)
   const [isSitesLoading, setSitesLoading] = useState(false)
   const [sitesError, setSitesError] = useState<string | null>(null)
@@ -238,6 +244,19 @@ function App() {
   }, [activePage, auditResult])
 
   useEffect(() => {
+    if (activePage !== 'recommendations' || recommendationsResult) {
+      return
+    }
+
+    setRecommendationsLoading(true)
+    setRecommendationsError(null)
+    adminApi.listRecommendations()
+      .then(setRecommendationsResult)
+      .catch(() => setRecommendationsError('分类推荐加载失败，请检查后端服务。'))
+      .finally(() => setRecommendationsLoading(false))
+  }, [activePage, recommendationsResult])
+
+  useEffect(() => {
     if (activePage !== 'sites' || sites) {
       return
     }
@@ -291,6 +310,9 @@ function App() {
     auditResult,
     isAuditLoading,
     auditError,
+    recommendationsResult,
+    isRecommendationsLoading,
+    recommendationsError,
     sites,
     isSitesLoading,
     sitesError,
@@ -359,6 +381,9 @@ function createTableState({
   auditResult,
   isAuditLoading,
   auditError,
+  recommendationsResult,
+  isRecommendationsLoading,
+  recommendationsError,
   sites,
   isSitesLoading,
   sitesError,
@@ -383,6 +408,9 @@ function createTableState({
   auditResult: AdminAuditResult | null
   isAuditLoading: boolean
   auditError: string | null
+  recommendationsResult: AdminRecommendationsResult | null
+  isRecommendationsLoading: boolean
+  recommendationsError: string | null
   sites: AdminSiteRow[] | null
   isSitesLoading: boolean
   sitesError: string | null
@@ -442,6 +470,19 @@ function createTableState({
       loadingText: '正在加载审计日志...',
       error: auditError,
       emptyText: auditResult?.emptyText ?? pageEmptyText,
+    }
+  }
+
+  if (pageKey === 'recommendations') {
+    return {
+      rows: (recommendationsResult?.items ?? []).map((item: AdminRecommendationRow) => ({
+        id: item.id,
+        cells: recommendationRowCells(item),
+      })),
+      isLoading: isRecommendationsLoading,
+      loadingText: '正在加载分类推荐...',
+      error: recommendationsError,
+      emptyText: recommendationsResult?.emptyText ?? pageEmptyText,
     }
   }
 

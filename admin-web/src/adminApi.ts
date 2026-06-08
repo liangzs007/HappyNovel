@@ -79,6 +79,20 @@ export interface AdminAuditResult {
   emptyText: string
 }
 
+export interface AdminRecommendationRow {
+  id: string
+  name: string
+  type: string
+  boundBook: string
+  sortWeight: string
+  enabledStatus: string
+}
+
+export interface AdminRecommendationsResult {
+  items: AdminRecommendationRow[]
+  emptyText: string
+}
+
 export interface AdminComplianceResult {
   configCards: string[]
   complaints: AdminComplaintRow[]
@@ -172,6 +186,11 @@ interface BackendAdminAuditResponse {
   emptyText: string
 }
 
+interface BackendAdminRecommendationsResponse {
+  items: AdminRecommendationRow[]
+  emptyText: string
+}
+
 interface AdminApiOptions {
   baseUrl?: string
   fetcher?: typeof fetch
@@ -259,6 +278,14 @@ export function createAdminApi(options: AdminApiOptions = {}) {
         throw new Error(`审计日志加载失败：${response.status}`)
       }
       return await response.json() as BackendAdminAuditResponse
+    },
+
+    async listRecommendations(): Promise<AdminRecommendationsResult> {
+      const response = await fetcher(`${baseUrl}/api/admin/recommendations`)
+      if (!response.ok) {
+        throw new Error(`分类推荐加载失败：${response.status}`)
+      }
+      return await response.json() as BackendAdminRecommendationsResponse
     },
   }
 }

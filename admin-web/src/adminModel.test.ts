@@ -8,6 +8,7 @@ import {
   complaintRowCells,
   dashboardMetrics,
   glossaryRowCells,
+  recommendationRowCells,
   siteRowCells,
   taskRowCells,
 } from './adminModel'
@@ -175,6 +176,24 @@ describe('admin console model', () => {
       'book:book-seed-1',
       '下架测试书籍',
       '2026-06-08T00:00:00Z',
+    ])
+  })
+
+  it('maps recommendation rows to Chinese table cells', () => {
+    expect(recommendationRowCells({
+      id: 'category-fantasy',
+      name: 'Fantasy',
+      type: '分类',
+      boundBook: '-',
+      sortWeight: '0',
+      enabledStatus: '启用',
+    })).toEqual([
+      'Fantasy',
+      '分类',
+      '-',
+      '0',
+      '启用',
+      '编辑',
     ])
   })
 })
