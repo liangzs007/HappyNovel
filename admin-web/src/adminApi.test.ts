@@ -139,4 +139,43 @@ describe('admin api client', () => {
     expect(compliance.complaints).toEqual([])
     expect(compliance.emptyText).toBe('暂无版权投诉记录')
   })
+
+  it('loads admin chapter rows from backend response', async () => {
+    const api = createAdminApi({
+      baseUrl: 'http://localhost:8080',
+      fetcher: async (url) => {
+        expect(url).toBe('http://localhost:8080/api/admin/chapters?bookId=book-seed-1')
+        return new Response(JSON.stringify({
+          emptyText: '暂无章节，请先触发书籍抓取。',
+          chapters: [
+            {
+              id: 'chapter-seed-1',
+              order: 1,
+              title: 'Chapter 1: Azure Cloud Sect',
+              crawlStatus: '已抓取',
+              cleanStatus: '已清洗',
+              translationStatus: '已翻译',
+              publishStatus: '已发布',
+              updatedAt: '2026-06-08T00:00:00Z',
+            },
+          ],
+        }))
+      },
+    })
+
+    const response = await api.listChapters()
+
+    expect(response.emptyText).toBe('暂无章节，请先触发书籍抓取。')
+    expect(response.chapters).toEqual([
+      {
+        id: 'chapter-seed-1',
+        order: '1',
+        title: 'Chapter 1: Azure Cloud Sect',
+        crawlStatus: '已抓取',
+        cleanStatus: '已清洗',
+        translationStatus: '已翻译',
+        publishStatus: '已发布',
+      },
+    ])
+  })
 })

@@ -71,6 +71,16 @@ export interface AdminComplaintTableRow {
   note: string
 }
 
+export interface AdminChapterTableRow {
+  id: string
+  order: string
+  title: string
+  crawlStatus: string
+  cleanStatus: string
+  translationStatus: string
+  publishStatus: string
+}
+
 export const adminNavigation: AdminNavItem[] = [
   { key: 'dashboard', label: '仪表盘' },
   { key: 'sites', label: '站点管理' },
@@ -209,6 +219,18 @@ export function complaintRowCells(complaint: AdminComplaintTableRow): string[] {
     complaint.chapterTitle,
     complaint.status,
     complaint.note,
+    '查看',
+  ]
+}
+
+export function chapterRowCells(chapter: AdminChapterTableRow): string[] {
+  return [
+    chapter.order,
+    chapter.title,
+    chapter.crawlStatus,
+    chapter.cleanStatus,
+    chapter.translationStatus,
+    chapter.publishStatus,
     '查看',
   ]
 }

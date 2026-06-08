@@ -4,6 +4,8 @@ import {
   createAdminApi,
   type AdminBookRow,
   type AdminBooksResult,
+  type AdminChapterRow,
+  type AdminChaptersResult,
   type AdminComplianceResult,
   type AdminSiteRow,
   type AdminTaskRow,
@@ -12,6 +14,7 @@ import {
   adminNavigation,
   adminPages,
   bookRowCells,
+  chapterRowCells,
   complaintRowCells,
   dashboardMetrics,
   siteRowCells,
@@ -156,6 +159,9 @@ function App() {
   const [booksResult, setBooksResult] = useState<AdminBooksResult | null>(null)
   const [isBooksLoading, setBooksLoading] = useState(false)
   const [booksError, setBooksError] = useState<string | null>(null)
+  const [chaptersResult, setChaptersResult] = useState<AdminChaptersResult | null>(null)
+  const [isChaptersLoading, setChaptersLoading] = useState(false)
+  const [chaptersError, setChaptersError] = useState<string | null>(null)
   const [sites, setSites] = useState<AdminSiteRow[] | null>(null)
   const [isSitesLoading, setSitesLoading] = useState(false)
   const [sitesError, setSitesError] = useState<string | null>(null)
@@ -179,6 +185,19 @@ function App() {
       .catch(() => setBooksError('书籍列表加载失败，请检查后端服务。'))
       .finally(() => setBooksLoading(false))
   }, [activePage, booksResult])
+
+  useEffect(() => {
+    if (activePage !== 'chapters' || chaptersResult) {
+      return
+    }
+
+    setChaptersLoading(true)
+    setChaptersError(null)
+    adminApi.listChapters()
+      .then(setChaptersResult)
+      .catch(() => setChaptersError('章节列表加载失败，请检查后端服务。'))
+      .finally(() => setChaptersLoading(false))
+  }, [activePage, chaptersResult])
 
   useEffect(() => {
     if (activePage !== 'sites' || sites) {
@@ -225,6 +244,9 @@ function App() {
     booksResult,
     isBooksLoading,
     booksError,
+    chaptersResult,
+    isChaptersLoading,
+    chaptersError,
     sites,
     isSitesLoading,
     sitesError,
@@ -284,6 +306,9 @@ function createTableState({
   booksResult,
   isBooksLoading,
   booksError,
+  chaptersResult,
+  isChaptersLoading,
+  chaptersError,
   sites,
   isSitesLoading,
   sitesError,
@@ -299,6 +324,9 @@ function createTableState({
   booksResult: AdminBooksResult | null
   isBooksLoading: boolean
   booksError: string | null
+  chaptersResult: AdminChaptersResult | null
+  isChaptersLoading: boolean
+  chaptersError: string | null
   sites: AdminSiteRow[] | null
   isSitesLoading: boolean
   sitesError: string | null
@@ -319,6 +347,19 @@ function createTableState({
       loadingText: '正在加载书籍列表...',
       error: booksError,
       emptyText: booksResult?.emptyText ?? pageEmptyText,
+    }
+  }
+
+  if (pageKey === 'chapters') {
+    return {
+      rows: (chaptersResult?.chapters ?? []).map((chapter: AdminChapterRow) => ({
+        id: chapter.id,
+        cells: chapterRowCells(chapter),
+      })),
+      isLoading: isChaptersLoading,
+      loadingText: '正在加载章节列表...',
+      error: chaptersError,
+      emptyText: chaptersResult?.emptyText ?? pageEmptyText,
     }
   }
 

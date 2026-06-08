@@ -3,6 +3,7 @@ import {
   adminNavigation,
   adminPages,
   bookRowCells,
+  chapterRowCells,
   complaintRowCells,
   dashboardMetrics,
   siteRowCells,
@@ -116,6 +117,26 @@ describe('admin console model', () => {
       'Chapter 1',
       'OPEN',
       '等待处理',
+      '查看',
+    ])
+  })
+
+  it('maps chapter rows to Chinese table cells', () => {
+    expect(chapterRowCells({
+      id: 'chapter-seed-1',
+      order: '1',
+      title: 'Chapter 1: Azure Cloud Sect',
+      crawlStatus: '已抓取',
+      cleanStatus: '已清洗',
+      translationStatus: '已翻译',
+      publishStatus: '已发布',
+    })).toEqual([
+      '1',
+      'Chapter 1: Azure Cloud Sect',
+      '已抓取',
+      '已清洗',
+      '已翻译',
+      '已发布',
       '查看',
     ])
   })

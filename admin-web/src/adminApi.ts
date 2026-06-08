@@ -36,6 +36,21 @@ export interface AdminTaskRow {
   duration: string
 }
 
+export interface AdminChapterRow {
+  id: string
+  order: string
+  title: string
+  crawlStatus: string
+  cleanStatus: string
+  translationStatus: string
+  publishStatus: string
+}
+
+export interface AdminChaptersResult {
+  chapters: AdminChapterRow[]
+  emptyText: string
+}
+
 export interface AdminComplianceResult {
   configCards: string[]
   complaints: AdminComplaintRow[]
@@ -96,6 +111,21 @@ interface BackendComplianceResponse {
   emptyText: string
 }
 
+interface BackendAdminChapterRow {
+  id: string
+  order: number
+  title: string
+  crawlStatus: string
+  cleanStatus: string
+  translationStatus: string
+  publishStatus: string
+}
+
+interface BackendAdminChaptersResponse {
+  chapters: BackendAdminChapterRow[]
+  emptyText: string
+}
+
 interface AdminApiOptions {
   baseUrl?: string
   fetcher?: typeof fetch
@@ -152,6 +182,18 @@ export function createAdminApi(options: AdminApiOptions = {}) {
         emptyText: payload.emptyText,
       }
     },
+
+    async listChapters(bookId = 'book-seed-1'): Promise<AdminChaptersResult> {
+      const response = await fetcher(`${baseUrl}/api/admin/chapters?bookId=${bookId}`)
+      if (!response.ok) {
+        throw new Error(`章节列表加载失败：${response.status}`)
+      }
+      const payload = await response.json() as BackendAdminChaptersResponse
+      return {
+        emptyText: payload.emptyText,
+        chapters: payload.chapters.map(toChapterRow),
+      }
+    },
   }
 }
 
@@ -191,5 +233,17 @@ function toTaskRow(task: BackendPipelineTask): AdminTaskRow {
     retryCount: String(task.retryCount),
     failureReason: task.failureReason || '-',
     duration: '-',
+  }
+}
+
+function toChapterRow(chapter: BackendAdminChapterRow): AdminChapterRow {
+  return {
+    id: chapter.id,
+    order: String(chapter.order),
+    title: chapter.title,
+    crawlStatus: chapter.crawlStatus,
+    cleanStatus: chapter.cleanStatus,
+    translationStatus: chapter.translationStatus,
+    publishStatus: chapter.publishStatus,
   }
 }
