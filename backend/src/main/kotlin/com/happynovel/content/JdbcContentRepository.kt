@@ -20,8 +20,22 @@ class JdbcContentRepository(
     private val databaseClient: ContentDatabaseClient,
     private val language: String = "en",
 ) : ContentRepository {
-    override fun homeBooks(): List<BookSummary> =
-        databaseClient.query(PUBLISHED_BOOKS_SQL).map(JdbcContentRowMapper::bookSummary)
+    override fun homeBooks(): List<BookSummary> = latestBooks()
+
+    override fun recommendedBooks(): List<BookSummary> =
+        databaseClient.query("$PUBLISHED_BOOKS_SQL order by b.recommendation_weight desc, b.updated_at desc limit 20")
+            .map(JdbcContentRowMapper::bookSummary)
+
+    override fun latestBooks(): List<BookSummary> =
+        databaseClient.query("$PUBLISHED_BOOKS_SQL order by b.updated_at desc limit 20")
+            .map(JdbcContentRowMapper::bookSummary)
+
+    override fun popularBooks(): List<BookSummary> =
+        databaseClient.query(POPULAR_BOOKS_SQL).map(JdbcContentRowMapper::bookSummary)
+
+    override fun newBooks(): List<BookSummary> =
+        databaseClient.query("$PUBLISHED_BOOKS_SQL order by b.updated_at desc limit 20")
+            .map(JdbcContentRowMapper::bookSummary)
 
     override fun categories(): List<Category> =
         databaseClient.query(CATEGORIES_SQL).map(JdbcContentRowMapper::category)
@@ -79,6 +93,34 @@ class JdbcContentRepository(
                 limit 1
             ) latest on true
             where b.publication_status = 'published'
+        """
+
+        private const val POPULAR_BOOKS_SQL = """
+            select
+                b.id::text as id,
+                b.title,
+                b.author,
+                coalesce(b.cover_url, '') as cover_url,
+                coalesce(b.description, '') as description,
+                b.serialization_status,
+                coalesce(latest.title, '') as latest_chapter_title,
+                b.updated_at
+            from book b
+            left join lateral (
+                select ct.title
+                from chapter c
+                join chapter_translation ct on ct.chapter_id = c.id
+                where c.book_id = b.id
+                  and c.publication_status = 'published'
+                  and ct.publication_status = 'published'
+                order by c.chapter_order desc
+                limit 1
+            ) latest on true
+            left join reading_event re on re.book_id = b.id
+            where b.publication_status = 'published'
+            group by b.id, latest.title
+            order by count(re.id) desc, b.updated_at desc
+            limit 20
         """
 
         private const val CHAPTER_CATALOG_SQL = """
