@@ -35,10 +35,11 @@ data class GlossaryTerm(
 interface GlossaryService {
     fun addTerm(request: AddGlossaryTermRequest): GlossaryTerm
     fun enabledTerms(bookId: String): List<GlossaryTerm>
+    fun terms(bookId: String? = null): List<GlossaryTerm>
 }
 
 class InMemoryGlossaryService : GlossaryService {
-    private val terms = mutableListOf<GlossaryTerm>()
+    private val storedTerms = mutableListOf<GlossaryTerm>()
 
     override fun addTerm(request: AddGlossaryTermRequest): GlossaryTerm {
         val term = GlossaryTerm(
@@ -48,11 +49,15 @@ class InMemoryGlossaryService : GlossaryService {
             type = request.type,
             description = request.description,
         )
-        terms += term
+        storedTerms += term
         return term
     }
 
-    override fun enabledTerms(bookId: String): List<GlossaryTerm> = terms.filter { it.bookId == bookId && it.enabled }
+    override fun enabledTerms(bookId: String): List<GlossaryTerm> =
+        storedTerms.filter { it.bookId == bookId && it.enabled }
+
+    override fun terms(bookId: String?): List<GlossaryTerm> =
+        storedTerms.filter { bookId.isNullOrBlank() || it.bookId == bookId }
 }
 
 @Configuration

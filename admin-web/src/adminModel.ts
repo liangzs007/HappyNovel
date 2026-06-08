@@ -81,6 +81,15 @@ export interface AdminChapterTableRow {
   publishStatus: string
 }
 
+export interface AdminGlossaryTableRow {
+  id: string
+  sourceTerm: string
+  translatedTerm: string
+  type: string
+  enabledStatus: string
+  updatedAt: string
+}
+
 export const adminNavigation: AdminNavItem[] = [
   { key: 'dashboard', label: '仪表盘' },
   { key: 'sites', label: '站点管理' },
@@ -232,5 +241,16 @@ export function chapterRowCells(chapter: AdminChapterTableRow): string[] {
     chapter.translationStatus,
     chapter.publishStatus,
     '查看',
+  ]
+}
+
+export function glossaryRowCells(term: AdminGlossaryTableRow): string[] {
+  return [
+    term.sourceTerm,
+    term.translatedTerm,
+    term.type,
+    term.enabledStatus,
+    term.updatedAt,
+    '编辑',
   ]
 }

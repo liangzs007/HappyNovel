@@ -51,6 +51,20 @@ export interface AdminChaptersResult {
   emptyText: string
 }
 
+export interface AdminGlossaryTermRow {
+  id: string
+  sourceTerm: string
+  translatedTerm: string
+  type: string
+  enabledStatus: string
+  updatedAt: string
+}
+
+export interface AdminGlossaryResult {
+  terms: AdminGlossaryTermRow[]
+  emptyText: string
+}
+
 export interface AdminComplianceResult {
   configCards: string[]
   complaints: AdminComplaintRow[]
@@ -126,6 +140,19 @@ interface BackendAdminChaptersResponse {
   emptyText: string
 }
 
+interface BackendAdminGlossaryTermRow {
+  id: string
+  sourceTerm: string
+  translatedTerm: string
+  type: string
+  enabledStatus: string
+}
+
+interface BackendAdminGlossaryResponse {
+  terms: BackendAdminGlossaryTermRow[]
+  emptyText: string
+}
+
 interface AdminApiOptions {
   baseUrl?: string
   fetcher?: typeof fetch
@@ -194,6 +221,18 @@ export function createAdminApi(options: AdminApiOptions = {}) {
         chapters: payload.chapters.map(toChapterRow),
       }
     },
+
+    async listGlossaryTerms(): Promise<AdminGlossaryResult> {
+      const response = await fetcher(`${baseUrl}/api/admin/glossary`)
+      if (!response.ok) {
+        throw new Error(`术语列表加载失败：${response.status}`)
+      }
+      const payload = await response.json() as BackendAdminGlossaryResponse
+      return {
+        emptyText: payload.emptyText,
+        terms: payload.terms.map(toGlossaryTermRow),
+      }
+    },
   }
 }
 
@@ -245,5 +284,16 @@ function toChapterRow(chapter: BackendAdminChapterRow): AdminChapterRow {
     cleanStatus: chapter.cleanStatus,
     translationStatus: chapter.translationStatus,
     publishStatus: chapter.publishStatus,
+  }
+}
+
+function toGlossaryTermRow(term: BackendAdminGlossaryTermRow): AdminGlossaryTermRow {
+  return {
+    id: term.id,
+    sourceTerm: term.sourceTerm,
+    translatedTerm: term.translatedTerm,
+    type: term.type,
+    enabledStatus: term.enabledStatus,
+    updatedAt: '-',
   }
 }

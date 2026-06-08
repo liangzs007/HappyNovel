@@ -178,4 +178,41 @@ describe('admin api client', () => {
       },
     ])
   })
+
+  it('loads admin glossary rows from backend response', async () => {
+    const api = createAdminApi({
+      baseUrl: 'http://localhost:8080',
+      fetcher: async (url) => {
+        expect(url).toBe('http://localhost:8080/api/admin/glossary')
+        return new Response(JSON.stringify({
+          emptyText: '暂无术语，请为书籍添加术语表。',
+          terms: [
+            {
+              id: 'term-1',
+              bookId: 'book-seed-1',
+              sourceTerm: '青云宗',
+              translatedTerm: 'Azure Cloud Sect',
+              type: 'ORGANIZATION',
+              enabledStatus: '启用',
+              description: '主角初入的宗门',
+            },
+          ],
+        }))
+      },
+    })
+
+    const response = await api.listGlossaryTerms()
+
+    expect(response.emptyText).toBe('暂无术语，请为书籍添加术语表。')
+    expect(response.terms).toEqual([
+      {
+        id: 'term-1',
+        sourceTerm: '青云宗',
+        translatedTerm: 'Azure Cloud Sect',
+        type: 'ORGANIZATION',
+        enabledStatus: '启用',
+        updatedAt: '-',
+      },
+    ])
+  })
 })

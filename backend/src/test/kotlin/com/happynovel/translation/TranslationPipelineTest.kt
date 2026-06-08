@@ -21,6 +21,8 @@ class TranslationPipelineTest {
 
         assertEquals("Azure Cloud Sect", term.translatedTerm)
         assertEquals(listOf(term), glossary.enabledTerms("book-1"))
+        assertEquals(listOf(term), glossary.terms("book-1"))
+        assertEquals(listOf(term), glossary.terms())
     }
 
     @Test

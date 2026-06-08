@@ -6,6 +6,7 @@ import {
   chapterRowCells,
   complaintRowCells,
   dashboardMetrics,
+  glossaryRowCells,
   siteRowCells,
   taskRowCells,
 } from './adminModel'
@@ -138,6 +139,24 @@ describe('admin console model', () => {
       '已翻译',
       '已发布',
       '查看',
+    ])
+  })
+
+  it('maps glossary rows to Chinese table cells', () => {
+    expect(glossaryRowCells({
+      id: 'term-1',
+      sourceTerm: '青云宗',
+      translatedTerm: 'Azure Cloud Sect',
+      type: 'ORGANIZATION',
+      enabledStatus: '启用',
+      updatedAt: '-',
+    })).toEqual([
+      '青云宗',
+      'Azure Cloud Sect',
+      'ORGANIZATION',
+      '启用',
+      '-',
+      '编辑',
     ])
   })
 })

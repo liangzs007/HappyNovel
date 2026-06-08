@@ -7,6 +7,8 @@ import {
   type AdminChapterRow,
   type AdminChaptersResult,
   type AdminComplianceResult,
+  type AdminGlossaryResult,
+  type AdminGlossaryTermRow,
   type AdminSiteRow,
   type AdminTaskRow,
 } from './adminApi'
@@ -17,6 +19,7 @@ import {
   chapterRowCells,
   complaintRowCells,
   dashboardMetrics,
+  glossaryRowCells,
   siteRowCells,
   taskRowCells,
   type AdminPageKey,
@@ -162,6 +165,9 @@ function App() {
   const [chaptersResult, setChaptersResult] = useState<AdminChaptersResult | null>(null)
   const [isChaptersLoading, setChaptersLoading] = useState(false)
   const [chaptersError, setChaptersError] = useState<string | null>(null)
+  const [glossaryResult, setGlossaryResult] = useState<AdminGlossaryResult | null>(null)
+  const [isGlossaryLoading, setGlossaryLoading] = useState(false)
+  const [glossaryError, setGlossaryError] = useState<string | null>(null)
   const [sites, setSites] = useState<AdminSiteRow[] | null>(null)
   const [isSitesLoading, setSitesLoading] = useState(false)
   const [sitesError, setSitesError] = useState<string | null>(null)
@@ -198,6 +204,19 @@ function App() {
       .catch(() => setChaptersError('章节列表加载失败，请检查后端服务。'))
       .finally(() => setChaptersLoading(false))
   }, [activePage, chaptersResult])
+
+  useEffect(() => {
+    if (activePage !== 'glossary' || glossaryResult) {
+      return
+    }
+
+    setGlossaryLoading(true)
+    setGlossaryError(null)
+    adminApi.listGlossaryTerms()
+      .then(setGlossaryResult)
+      .catch(() => setGlossaryError('术语列表加载失败，请检查后端服务。'))
+      .finally(() => setGlossaryLoading(false))
+  }, [activePage, glossaryResult])
 
   useEffect(() => {
     if (activePage !== 'sites' || sites) {
@@ -247,6 +266,9 @@ function App() {
     chaptersResult,
     isChaptersLoading,
     chaptersError,
+    glossaryResult,
+    isGlossaryLoading,
+    glossaryError,
     sites,
     isSitesLoading,
     sitesError,
@@ -309,6 +331,9 @@ function createTableState({
   chaptersResult,
   isChaptersLoading,
   chaptersError,
+  glossaryResult,
+  isGlossaryLoading,
+  glossaryError,
   sites,
   isSitesLoading,
   sitesError,
@@ -327,6 +352,9 @@ function createTableState({
   chaptersResult: AdminChaptersResult | null
   isChaptersLoading: boolean
   chaptersError: string | null
+  glossaryResult: AdminGlossaryResult | null
+  isGlossaryLoading: boolean
+  glossaryError: string | null
   sites: AdminSiteRow[] | null
   isSitesLoading: boolean
   sitesError: string | null
@@ -360,6 +388,19 @@ function createTableState({
       loadingText: '正在加载章节列表...',
       error: chaptersError,
       emptyText: chaptersResult?.emptyText ?? pageEmptyText,
+    }
+  }
+
+  if (pageKey === 'glossary') {
+    return {
+      rows: (glossaryResult?.terms ?? []).map((term: AdminGlossaryTermRow) => ({
+        id: term.id,
+        cells: glossaryRowCells(term),
+      })),
+      isLoading: isGlossaryLoading,
+      loadingText: '正在加载术语列表...',
+      error: glossaryError,
+      emptyText: glossaryResult?.emptyText ?? pageEmptyText,
     }
   }
 
