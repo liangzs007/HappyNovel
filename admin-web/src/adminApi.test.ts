@@ -385,6 +385,41 @@ describe('admin api client', () => {
     expect(compliance.configCards).toContain('插屏频率：每 8 章')
   })
 
+  it('schedules latest crawl tasks through backend API', async () => {
+    const api = createAdminApi({
+      baseUrl: 'http://localhost:8080',
+      fetcher: async (url, init) => {
+        expect(url).toBe('http://localhost:8080/api/admin/crawling/tasks/schedule-latest')
+        expect(init?.method).toBe('POST')
+        expect(JSON.parse(String(init?.body))).toEqual({ nowEpochMinutes: 1000 })
+        return new Response(JSON.stringify([
+          {
+            id: 'task-latest-1',
+            type: 'CRAWL_LATEST',
+            status: 'CREATED',
+            targetId: 'source-1',
+            retryCount: 0,
+            failureReason: null,
+          },
+        ]))
+      },
+    })
+
+    const tasks = await api.scheduleLatestCrawls(1000)
+
+    expect(tasks).toEqual([
+      {
+        id: 'task-latest-1',
+        type: 'CRAWL_LATEST',
+        status: 'CREATED',
+        targetId: 'source-1',
+        retryCount: '0',
+        failureReason: '-',
+        duration: '-',
+      },
+    ])
+  })
+
   it('creates glossary term through backend API', async () => {
     const api = createAdminApi({
       baseUrl: 'http://localhost:8080',

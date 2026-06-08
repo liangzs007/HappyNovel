@@ -318,10 +318,14 @@ function ComplianceQuickForms({
 
 function TaskRetryForm({
   isSubmitting,
+  isScheduling,
   onSubmit,
+  onScheduleLatest,
 }: {
   isSubmitting: boolean
+  isScheduling: boolean
   onSubmit: (taskId: string, html: string) => void
+  onScheduleLatest: () => void
 }) {
   const [taskId, setTaskId] = useState('')
   const [html, setHtml] = useState('<div class="chapter-list"></div>')
@@ -344,6 +348,9 @@ function TaskRetryForm({
       </label>
       <button type="submit" disabled={isSubmitting || !taskId || !html}>
         {isSubmitting ? '重试中' : '重试任务'}
+      </button>
+      <button type="button" className="secondary" disabled={isScheduling} onClick={onScheduleLatest}>
+        {isScheduling ? '调度中' : '调度最新章节'}
       </button>
     </form>
   )
@@ -706,6 +713,7 @@ function App() {
   const [tasks, setTasks] = useState<AdminTaskRow[] | null>(null)
   const [isTasksLoading, setTasksLoading] = useState(false)
   const [isTaskRetrying, setTaskRetrying] = useState(false)
+  const [isLatestCrawlScheduling, setLatestCrawlScheduling] = useState(false)
   const [tasksError, setTasksError] = useState<string | null>(null)
   const [compliance, setCompliance] = useState<AdminComplianceResult | null>(null)
   const [isComplianceLoading, setComplianceLoading] = useState(false)
@@ -921,6 +929,7 @@ function App() {
           taskRetryForm={(
             <TaskRetryForm
               isSubmitting={isTaskRetrying}
+              isScheduling={isLatestCrawlScheduling}
               onSubmit={(taskId, html) => {
                 setTaskRetrying(true)
                 setTasksError(null)
@@ -928,6 +937,14 @@ function App() {
                   .then((task) => setTasks((current) => [...(current ?? []), task]))
                   .catch(() => setTasksError('任务重试失败，请检查任务 ID 和 HTML 内容。'))
                   .finally(() => setTaskRetrying(false))
+              }}
+              onScheduleLatest={() => {
+                setLatestCrawlScheduling(true)
+                setTasksError(null)
+                adminApi.scheduleLatestCrawls()
+                  .then((scheduledTasks) => setTasks((current) => [...(current ?? []), ...scheduledTasks]))
+                  .catch(() => setTasksError('最新章节调度失败，请检查书籍来源配置。'))
+                  .finally(() => setLatestCrawlScheduling(false))
               }}
             />
           )}

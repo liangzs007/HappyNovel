@@ -232,7 +232,7 @@ button.secondary {
 }
 
 .quick-form-tasks {
-  grid-template-columns: minmax(180px, 1fr) minmax(360px, 2fr) auto;
+  grid-template-columns: minmax(180px, 1fr) minmax(320px, 2fr) auto auto;
 }
 
 .compliance-forms {

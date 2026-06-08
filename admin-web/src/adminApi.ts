@@ -386,6 +386,19 @@ export function createAdminApi(options: AdminApiOptions = {}) {
       return toTaskRow(payload)
     },
 
+    async scheduleLatestCrawls(nowEpochMinutes = Math.floor(Date.now() / 60000)): Promise<AdminTaskRow[]> {
+      const response = await fetcher(`${baseUrl}/api/admin/crawling/tasks/schedule-latest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nowEpochMinutes }),
+      })
+      if (!response.ok) {
+        throw new Error(`最新章节调度失败：${response.status}`)
+      }
+      const payload = await response.json() as BackendPipelineTask[]
+      return payload.map(toTaskRow)
+    },
+
     async loadCompliance(): Promise<AdminComplianceResult> {
       const response = await fetcher(`${baseUrl}/api/admin/compliance`)
       if (!response.ok) {
