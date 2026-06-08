@@ -1,6 +1,8 @@
 package com.happynovel.app
 
+import com.happynovel.admin.InMemoryAdConfigService
 import com.happynovel.admin.InMemoryCompliancePolicyService
+import com.happynovel.admin.UpdateAdConfigRequest
 import com.happynovel.admin.UpdateComplianceConfigRequest
 import com.happynovel.content.InMemoryContentRepository
 import com.happynovel.publication.InMemoryPublicationControlService
@@ -12,11 +14,13 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class AppApiControllerTest {
+    private val adConfigService = InMemoryAdConfigService()
     private val compliancePolicyService = InMemoryCompliancePolicyService()
     private val publicationControlService = InMemoryPublicationControlService()
     private val readingEventService = InMemoryReadingEventService()
     private val controller = AppApiController(
         InMemoryContentRepository.withSeedData(),
+        adConfigService,
         compliancePolicyService,
         publicationControlService,
         readingEventService,
@@ -119,6 +123,23 @@ class AppApiControllerTest {
         assertEquals("Updated Terms", compliance.termsTitle)
         assertEquals(false, compliance.adDisclosureEnabled)
         assertEquals("Ads are disabled for this region.", compliance.adDisclosureText)
+    }
+
+    @Test
+    fun `app ad config reflects admin ad updates`() {
+        adConfigService.update(
+            UpdateAdConfigRequest(
+                enabled = false,
+                readerBannerEnabled = false,
+                interstitialEveryChapters = 8,
+            ),
+        )
+
+        val adConfig = controller.adConfig()
+
+        assertEquals(false, adConfig.enabled)
+        assertEquals(false, adConfig.readerBannerEnabled)
+        assertEquals(8, adConfig.interstitialEveryChapters)
     }
 
     @Test

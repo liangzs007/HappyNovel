@@ -1,5 +1,6 @@
 package com.happynovel.app
 
+import com.happynovel.admin.InMemoryAdConfigService
 import com.happynovel.admin.InMemoryCompliancePolicyService
 import com.happynovel.content.BookDetail
 import com.happynovel.content.BookSummary
@@ -15,6 +16,7 @@ import kotlin.test.assertEquals
 class AppApiControllerSectionsTest {
     private val controller = AppApiController(
         FakeSectionContentRepository(),
+        InMemoryAdConfigService(),
         InMemoryCompliancePolicyService(),
         InMemoryPublicationControlService(),
         InMemoryReadingEventService(),

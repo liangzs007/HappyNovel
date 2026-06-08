@@ -30,6 +30,7 @@ data class CopyrightComplaintRow(
 
 data class AdminComplianceResponse(
     val config: ComplianceConfigResponse,
+    val adConfig: AdminAdConfigResponse,
     val complaints: List<CopyrightComplaintRow>,
     val emptyText: String,
 )
@@ -104,10 +105,12 @@ class InMemoryCompliancePolicyService : CompliancePolicyService {
 @RequestMapping("/api/admin/compliance")
 class AdminComplianceController(
     private val compliancePolicyService: CompliancePolicyService,
+    private val adConfigService: AdConfigService,
 ) {
     @GetMapping
     fun compliance(): AdminComplianceResponse = AdminComplianceResponse(
         config = compliancePolicyService.current(),
+        adConfig = adConfigService.current(),
         complaints = compliancePolicyService.complaints(),
         emptyText = "暂无版权投诉记录",
     )
@@ -115,6 +118,15 @@ class AdminComplianceController(
     @PutMapping
     fun updateCompliance(@RequestBody request: UpdateComplianceConfigRequest): AdminComplianceResponse = AdminComplianceResponse(
         config = compliancePolicyService.update(request),
+        adConfig = adConfigService.current(),
+        complaints = compliancePolicyService.complaints(),
+        emptyText = "暂无版权投诉记录",
+    )
+
+    @PutMapping("/ad-config")
+    fun updateAdConfig(@RequestBody request: UpdateAdConfigRequest): AdminComplianceResponse = AdminComplianceResponse(
+        config = compliancePolicyService.current(),
+        adConfig = adConfigService.update(request),
         complaints = compliancePolicyService.complaints(),
         emptyText = "暂无版权投诉记录",
     )
@@ -124,6 +136,7 @@ class AdminComplianceController(
         compliancePolicyService.createComplaint(request)
         return AdminComplianceResponse(
             config = compliancePolicyService.current(),
+            adConfig = adConfigService.current(),
             complaints = compliancePolicyService.complaints(),
             emptyText = "暂无版权投诉记录",
         )

@@ -1,6 +1,7 @@
 package com.happynovel.app
 
 import com.happynovel.admin.CompliancePolicyService
+import com.happynovel.admin.AdConfigService
 import com.happynovel.content.BookDetail
 import com.happynovel.content.BookSummary
 import com.happynovel.content.Category
@@ -69,6 +70,7 @@ data class RecordReadingEventRequest(
 @RequestMapping("/api/app")
 class AppApiController(
     private val contentRepository: ContentRepository,
+    private val adConfigService: AdConfigService,
     private val compliancePolicyService: CompliancePolicyService,
     private val publicationControlService: PublicationControlService,
     private val readingEventService: ReadingEventService,
@@ -149,11 +151,14 @@ class AppApiController(
     }
 
     @GetMapping("/ad-config")
-    fun adConfig(): AdConfigResponse = AdConfigResponse(
-        enabled = true,
-        readerBannerEnabled = true,
-        interstitialEveryChapters = 5,
-    )
+    fun adConfig(): AdConfigResponse {
+        val config = adConfigService.current()
+        return AdConfigResponse(
+            enabled = config.enabled,
+            readerBannerEnabled = config.readerBannerEnabled,
+            interstitialEveryChapters = config.interstitialEveryChapters,
+        )
+    }
 
     @GetMapping("/compliance-config")
     fun complianceConfig(): AppComplianceConfigResponse {

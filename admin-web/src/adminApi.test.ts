@@ -175,6 +175,11 @@ describe('admin api client', () => {
             adDisclosureEnabled: true,
             adDisclosureText: 'This app may show ads.',
           },
+          adConfig: {
+            enabled: true,
+            readerBannerEnabled: true,
+            interstitialEveryChapters: 5,
+          },
           complaints: [],
           emptyText: '暂无版权投诉记录',
         }))
@@ -187,6 +192,9 @@ describe('admin api client', () => {
       '隐私政策：HappyNovel Privacy Policy',
       '服务条款：HappyNovel Terms of Service',
       '广告披露：已启用',
+      '广告开关：已启用',
+      '阅读页横幅：已启用',
+      '插屏频率：每 5 章',
     ])
     expect(compliance.complaints).toEqual([])
     expect(compliance.emptyText).toBe('暂无版权投诉记录')
@@ -215,6 +223,11 @@ describe('admin api client', () => {
             adDisclosureEnabled: false,
             adDisclosureText: 'Ads are disabled.',
           },
+          adConfig: {
+            enabled: true,
+            readerBannerEnabled: true,
+            interstitialEveryChapters: 5,
+          },
           complaints: [],
           emptyText: '暂无版权投诉记录',
         }))
@@ -234,7 +247,52 @@ describe('admin api client', () => {
       '隐私政策：Updated Privacy',
       '服务条款：Updated Terms',
       '广告披露：未启用',
+      '广告开关：已启用',
+      '阅读页横幅：已启用',
+      '插屏频率：每 5 章',
     ])
+  })
+
+  it('updates ad config through backend API', async () => {
+    const api = createAdminApi({
+      baseUrl: 'http://localhost:8080',
+      fetcher: async (url, init) => {
+        expect(url).toBe('http://localhost:8080/api/admin/compliance/ad-config')
+        expect(init?.method).toBe('PUT')
+        expect(JSON.parse(String(init?.body))).toEqual({
+          enabled: false,
+          readerBannerEnabled: false,
+          interstitialEveryChapters: 8,
+        })
+        return new Response(JSON.stringify({
+          config: {
+            privacyPolicyTitle: 'HappyNovel Privacy Policy',
+            privacyPolicyUrl: 'https://example.com/privacy',
+            termsTitle: 'HappyNovel Terms of Service',
+            termsUrl: 'https://example.com/terms',
+            adDisclosureEnabled: true,
+            adDisclosureText: 'This app may show ads.',
+          },
+          adConfig: {
+            enabled: false,
+            readerBannerEnabled: false,
+            interstitialEveryChapters: 8,
+          },
+          complaints: [],
+          emptyText: '暂无版权投诉记录',
+        }))
+      },
+    })
+
+    const compliance = await api.updateAdConfig({
+      enabled: false,
+      readerBannerEnabled: false,
+      interstitialEveryChapters: 8,
+    })
+
+    expect(compliance.configCards).toContain('广告开关：未启用')
+    expect(compliance.configCards).toContain('阅读页横幅：未启用')
+    expect(compliance.configCards).toContain('插屏频率：每 8 章')
   })
 
   it('creates copyright complaint through backend API', async () => {
@@ -257,6 +315,11 @@ describe('admin api client', () => {
             termsUrl: 'https://example.com/terms',
             adDisclosureEnabled: true,
             adDisclosureText: 'This app may show ads.',
+          },
+          adConfig: {
+            enabled: true,
+            readerBannerEnabled: true,
+            interstitialEveryChapters: 5,
           },
           complaints: [
             {

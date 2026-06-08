@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 class AdminComplianceControllerTest {
     @Test
     fun `admin compliance endpoint returns policy config and complaint rows`() {
-        val controller = AdminComplianceController(InMemoryCompliancePolicyService())
+        val controller = AdminComplianceController(InMemoryCompliancePolicyService(), InMemoryAdConfigService())
 
         val response = controller.compliance()
 
@@ -19,7 +19,7 @@ class AdminComplianceControllerTest {
 
     @Test
     fun `admin can update compliance policy config`() {
-        val controller = AdminComplianceController(InMemoryCompliancePolicyService())
+        val controller = AdminComplianceController(InMemoryCompliancePolicyService(), InMemoryAdConfigService())
 
         val response = controller.updateCompliance(
             UpdateComplianceConfigRequest(
@@ -40,7 +40,7 @@ class AdminComplianceControllerTest {
 
     @Test
     fun `admin can create copyright complaint record`() {
-        val controller = AdminComplianceController(InMemoryCompliancePolicyService())
+        val controller = AdminComplianceController(InMemoryCompliancePolicyService(), InMemoryAdConfigService())
 
         val response = controller.createComplaint(
             CreateCopyrightComplaintRequest(
@@ -57,5 +57,24 @@ class AdminComplianceControllerTest {
         assertEquals("第一章", complaint.chapterTitle)
         assertEquals("待处理", complaint.status)
         assertEquals("权利人要求下架章节", complaint.note)
+    }
+
+    @Test
+    fun `admin can update app ad config`() {
+        val adConfigService = InMemoryAdConfigService()
+        val controller = AdminComplianceController(InMemoryCompliancePolicyService(), adConfigService)
+
+        val response = controller.updateAdConfig(
+            UpdateAdConfigRequest(
+                enabled = false,
+                readerBannerEnabled = false,
+                interstitialEveryChapters = 8,
+            ),
+        )
+
+        assertEquals(false, response.adConfig.enabled)
+        assertEquals(false, response.adConfig.readerBannerEnabled)
+        assertEquals(8, response.adConfig.interstitialEveryChapters)
+        assertEquals(response.adConfig, adConfigService.current())
     }
 }

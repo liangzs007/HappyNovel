@@ -1,5 +1,6 @@
 package com.happynovel.app
 
+import com.happynovel.admin.InMemoryAdConfigService
 import com.happynovel.admin.InMemoryCompliancePolicyService
 import com.happynovel.content.BookDetail
 import com.happynovel.content.BookSummary
@@ -18,6 +19,7 @@ class AppApiBookListTest {
         val repository = RecordingBrowseContentRepository()
         val controller = AppApiController(
             repository,
+            InMemoryAdConfigService(),
             InMemoryCompliancePolicyService(),
             InMemoryPublicationControlService(),
             InMemoryReadingEventService(),

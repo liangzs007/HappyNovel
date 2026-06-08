@@ -118,6 +118,12 @@ export interface UpdateComplianceConfigRequest {
   adDisclosureText: string
 }
 
+export interface UpdateAdConfigRequest {
+  enabled: boolean
+  readerBannerEnabled: boolean
+  interstitialEveryChapters: number
+}
+
 export interface CreateComplaintRequest {
   source: string
   bookTitle: string
@@ -174,6 +180,11 @@ interface BackendComplianceResponse {
     termsUrl: string
     adDisclosureEnabled: boolean
     adDisclosureText: string
+  }
+  adConfig: {
+    enabled: boolean
+    readerBannerEnabled: boolean
+    interstitialEveryChapters: number
   }
   complaints: AdminComplaintRow[]
   emptyText: string
@@ -302,6 +313,19 @@ export function createAdminApi(options: AdminApiOptions = {}) {
       return toComplianceResult(payload)
     },
 
+    async updateAdConfig(request: UpdateAdConfigRequest): Promise<AdminComplianceResult> {
+      const response = await fetcher(`${baseUrl}/api/admin/compliance/ad-config`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(request),
+      })
+      if (!response.ok) {
+        throw new Error(`广告配置保存失败：${response.status}`)
+      }
+      const payload = await response.json() as BackendComplianceResponse
+      return toComplianceResult(payload)
+    },
+
     async createComplaint(request: CreateComplaintRequest): Promise<AdminComplianceResult> {
       const response = await fetcher(`${baseUrl}/api/admin/compliance/complaints`, {
         method: 'POST',
@@ -412,6 +436,9 @@ function toComplianceResult(payload: BackendComplianceResponse): AdminCompliance
       `隐私政策：${payload.config.privacyPolicyTitle}`,
       `服务条款：${payload.config.termsTitle}`,
       `广告披露：${payload.config.adDisclosureEnabled ? '已启用' : '未启用'}`,
+      `广告开关：${payload.adConfig.enabled ? '已启用' : '未启用'}`,
+      `阅读页横幅：${payload.adConfig.readerBannerEnabled ? '已启用' : '未启用'}`,
+      `插屏频率：每 ${payload.adConfig.interstitialEveryChapters} 章`,
     ],
     complaints: payload.complaints,
     emptyText: payload.emptyText,
