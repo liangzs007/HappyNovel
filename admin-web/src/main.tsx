@@ -15,6 +15,7 @@ import {
   type AdminRecommendationsResult,
   type AdminSiteRow,
   type AdminTaskRow,
+  type CreateGlossaryTermRequest,
 } from './adminApi'
 import {
   adminNavigation,
@@ -73,10 +74,12 @@ function ManagementPage({
   pageKey,
   tableState,
   complianceConfigCards,
+  glossaryCreateForm,
 }: {
   pageKey: AdminPageKey
   tableState: RemoteTableState
   complianceConfigCards: string[]
+  glossaryCreateForm?: React.ReactNode
 }) {
   const page = adminPages[pageKey]
 
@@ -95,6 +98,7 @@ function ManagementPage({
           {complianceConfigCards.map((card) => <span key={card}>{card}</span>)}
         </div>
       ) : null}
+      {pageKey === 'glossary' ? glossaryCreateForm : null}
       <div className="filters">
         <input placeholder="关键词搜索" />
         <select aria-label="状态筛选">
@@ -142,6 +146,79 @@ function ManagementPage({
   )
 }
 
+function GlossaryQuickCreateForm({
+  isSubmitting,
+  onSubmit,
+}: {
+  isSubmitting: boolean
+  onSubmit: (request: CreateGlossaryTermRequest) => void
+}) {
+  const [form, setForm] = useState<CreateGlossaryTermRequest>({
+    bookId: 'book-seed-1',
+    sourceTerm: '',
+    translatedTerm: '',
+    type: 'PERSON',
+    description: '',
+  })
+
+  return (
+    <form
+      className="quick-form"
+      onSubmit={(event) => {
+        event.preventDefault()
+        onSubmit(form)
+      }}
+    >
+      <label>
+        书籍 ID
+        <input
+          value={form.bookId}
+          onChange={(event) => setForm({ ...form, bookId: event.target.value })}
+        />
+      </label>
+      <label>
+        中文原词
+        <input
+          value={form.sourceTerm}
+          onChange={(event) => setForm({ ...form, sourceTerm: event.target.value })}
+        />
+      </label>
+      <label>
+        英文译名
+        <input
+          value={form.translatedTerm}
+          onChange={(event) => setForm({ ...form, translatedTerm: event.target.value })}
+        />
+      </label>
+      <label>
+        类型
+        <select
+          value={form.type}
+          onChange={(event) => setForm({ ...form, type: event.target.value })}
+        >
+          <option value="PERSON">人物</option>
+          <option value="PLACE">地点</option>
+          <option value="ORGANIZATION">组织</option>
+          <option value="SKILL">技能</option>
+          <option value="ITEM">物品</option>
+          <option value="TITLE">称谓</option>
+          <option value="OTHER">其他</option>
+        </select>
+      </label>
+      <label>
+        备注
+        <input
+          value={form.description}
+          onChange={(event) => setForm({ ...form, description: event.target.value })}
+        />
+      </label>
+      <button type="submit" disabled={isSubmitting || !form.sourceTerm || !form.translatedTerm}>
+        {isSubmitting ? '保存中' : '保存术语'}
+      </button>
+    </form>
+  )
+}
+
 interface RemoteTableRow {
   id: string
   cells: string[]
@@ -173,6 +250,7 @@ function App() {
   const [chaptersError, setChaptersError] = useState<string | null>(null)
   const [glossaryResult, setGlossaryResult] = useState<AdminGlossaryResult | null>(null)
   const [isGlossaryLoading, setGlossaryLoading] = useState(false)
+  const [isGlossarySubmitting, setGlossarySubmitting] = useState(false)
   const [glossaryError, setGlossaryError] = useState<string | null>(null)
   const [auditResult, setAuditResult] = useState<AdminAuditResult | null>(null)
   const [isAuditLoading, setAuditLoading] = useState(false)
@@ -354,6 +432,19 @@ function App() {
           pageKey={activePage}
           tableState={tableState}
           complianceConfigCards={compliance?.configCards ?? []}
+          glossaryCreateForm={(
+            <GlossaryQuickCreateForm
+              isSubmitting={isGlossarySubmitting}
+              onSubmit={(request) => {
+                setGlossarySubmitting(true)
+                setGlossaryError(null)
+                adminApi.createGlossaryTerm(request)
+                  .then(setGlossaryResult)
+                  .catch(() => setGlossaryError('术语保存失败，请检查书籍 ID 和后端服务。'))
+                  .finally(() => setGlossarySubmitting(false))
+              }}
+            />
+          )}
         />
       </section>
     </main>
