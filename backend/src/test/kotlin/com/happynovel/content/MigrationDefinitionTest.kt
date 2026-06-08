@@ -63,4 +63,16 @@ class MigrationDefinitionTest {
         assertTrue(migration.contains("progress_percent"))
         assertTrue(migration.contains("idx_reading_event_book_created_at"))
     }
+
+    @Test
+    fun `fifth migration seeds readable MVP novel content`() {
+        val migration = Files.readString(Path.of("src/main/resources/db/migration/V5__mvp_seed_content.sql"))
+
+        assertTrue(migration.contains("Dragon Gate"))
+        assertTrue(migration.contains("Azure Cloud Sect"))
+        assertTrue(migration.contains("insert into taxonomy_category"))
+        assertTrue(migration.contains("insert into book_category"))
+        assertTrue(migration.contains("insert into chapter_translation"))
+        assertTrue(migration.contains("publication_status"))
+    }
 }
