@@ -62,6 +62,15 @@ export interface AdminTaskTableRow {
   duration: string
 }
 
+export interface AdminComplaintTableRow {
+  id: string
+  source: string
+  bookTitle: string
+  chapterTitle: string
+  status: string
+  note: string
+}
+
 export const adminNavigation: AdminNavItem[] = [
   { key: 'dashboard', label: '仪表盘' },
   { key: 'sites', label: '站点管理' },
@@ -189,6 +198,17 @@ export function taskRowCells(task: AdminTaskTableRow): string[] {
     task.retryCount,
     task.failureReason,
     task.duration,
+    '查看',
+  ]
+}
+
+export function complaintRowCells(complaint: AdminComplaintTableRow): string[] {
+  return [
+    complaint.source,
+    complaint.bookTitle,
+    complaint.chapterTitle,
+    complaint.status,
+    complaint.note,
     '查看',
   ]
 }

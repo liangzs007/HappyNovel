@@ -4,6 +4,7 @@ import {
   createAdminApi,
   type AdminBookRow,
   type AdminBooksResult,
+  type AdminComplianceResult,
   type AdminSiteRow,
   type AdminTaskRow,
 } from './adminApi'
@@ -11,6 +12,7 @@ import {
   adminNavigation,
   adminPages,
   bookRowCells,
+  complaintRowCells,
   dashboardMetrics,
   siteRowCells,
   taskRowCells,
@@ -58,9 +60,11 @@ function Dashboard() {
 function ManagementPage({
   pageKey,
   tableState,
+  complianceConfigCards,
 }: {
   pageKey: AdminPageKey
   tableState: RemoteTableState
+  complianceConfigCards: string[]
 }) {
   const page = adminPages[pageKey]
 
@@ -74,6 +78,11 @@ function ManagementPage({
         {page.primaryAction ? <button type="button">{page.primaryAction}</button> : null}
       </div>
       {pageKey === 'dashboard' ? <Dashboard /> : null}
+      {pageKey === 'compliance' && complianceConfigCards.length > 0 ? (
+        <div className="compliance-summary">
+          {complianceConfigCards.map((card) => <span key={card}>{card}</span>)}
+        </div>
+      ) : null}
       <div className="filters">
         <input placeholder="关键词搜索" />
         <select aria-label="状态筛选">
@@ -153,6 +162,9 @@ function App() {
   const [tasks, setTasks] = useState<AdminTaskRow[] | null>(null)
   const [isTasksLoading, setTasksLoading] = useState(false)
   const [tasksError, setTasksError] = useState<string | null>(null)
+  const [compliance, setCompliance] = useState<AdminComplianceResult | null>(null)
+  const [isComplianceLoading, setComplianceLoading] = useState(false)
+  const [complianceError, setComplianceError] = useState<string | null>(null)
   const page = adminPages[activePage]
 
   useEffect(() => {
@@ -194,6 +206,19 @@ function App() {
       .finally(() => setTasksLoading(false))
   }, [activePage, tasks])
 
+  useEffect(() => {
+    if (activePage !== 'compliance' || compliance) {
+      return
+    }
+
+    setComplianceLoading(true)
+    setComplianceError(null)
+    adminApi.loadCompliance()
+      .then(setCompliance)
+      .catch(() => setComplianceError('合规配置加载失败，请检查后端服务。'))
+      .finally(() => setComplianceLoading(false))
+  }, [activePage, compliance])
+
   const tableState = createTableState({
     pageKey: activePage,
     pageEmptyText: page.emptyText,
@@ -206,6 +231,9 @@ function App() {
     tasks,
     isTasksLoading,
     tasksError,
+    compliance,
+    isComplianceLoading,
+    complianceError,
   })
 
   return (
@@ -237,6 +265,7 @@ function App() {
         <ManagementPage
           pageKey={activePage}
           tableState={tableState}
+          complianceConfigCards={compliance?.configCards ?? []}
         />
       </section>
     </main>
@@ -261,6 +290,9 @@ function createTableState({
   tasks,
   isTasksLoading,
   tasksError,
+  compliance,
+  isComplianceLoading,
+  complianceError,
 }: {
   pageKey: AdminPageKey
   pageEmptyText: string
@@ -273,6 +305,9 @@ function createTableState({
   tasks: AdminTaskRow[] | null
   isTasksLoading: boolean
   tasksError: string | null
+  compliance: AdminComplianceResult | null
+  isComplianceLoading: boolean
+  complianceError: string | null
 }): RemoteTableState {
   if (pageKey === 'books') {
     return {
@@ -310,6 +345,19 @@ function createTableState({
       loadingText: '正在加载任务列表...',
       error: tasksError,
       emptyText: pageEmptyText,
+    }
+  }
+
+  if (pageKey === 'compliance') {
+    return {
+      rows: (compliance?.complaints ?? []).map((complaint) => ({
+        id: complaint.id,
+        cells: complaintRowCells(complaint),
+      })),
+      isLoading: isComplianceLoading,
+      loadingText: '正在加载合规配置...',
+      error: complianceError,
+      emptyText: compliance?.emptyText ?? pageEmptyText,
     }
   }
 

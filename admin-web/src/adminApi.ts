@@ -36,6 +36,21 @@ export interface AdminTaskRow {
   duration: string
 }
 
+export interface AdminComplianceResult {
+  configCards: string[]
+  complaints: AdminComplaintRow[]
+  emptyText: string
+}
+
+export interface AdminComplaintRow {
+  id: string
+  source: string
+  bookTitle: string
+  chapterTitle: string
+  status: string
+  note: string
+}
+
 interface BackendBookSummary {
   id: string
   title: string
@@ -66,6 +81,19 @@ interface BackendPipelineTask {
   targetId: string
   retryCount: number
   failureReason?: string | null
+}
+
+interface BackendComplianceResponse {
+  config: {
+    privacyPolicyTitle: string
+    privacyPolicyUrl: string
+    termsTitle: string
+    termsUrl: string
+    adDisclosureEnabled: boolean
+    adDisclosureText: string
+  }
+  complaints: AdminComplaintRow[]
+  emptyText: string
 }
 
 interface AdminApiOptions {
@@ -106,6 +134,23 @@ export function createAdminApi(options: AdminApiOptions = {}) {
       }
       const payload = await response.json() as BackendPipelineTask[]
       return payload.map(toTaskRow)
+    },
+
+    async loadCompliance(): Promise<AdminComplianceResult> {
+      const response = await fetcher(`${baseUrl}/api/admin/compliance`)
+      if (!response.ok) {
+        throw new Error(`合规配置加载失败：${response.status}`)
+      }
+      const payload = await response.json() as BackendComplianceResponse
+      return {
+        configCards: [
+          `隐私政策：${payload.config.privacyPolicyTitle}`,
+          `服务条款：${payload.config.termsTitle}`,
+          `广告披露：${payload.config.adDisclosureEnabled ? '已启用' : '未启用'}`,
+        ],
+        complaints: payload.complaints,
+        emptyText: payload.emptyText,
+      }
     },
   }
 }

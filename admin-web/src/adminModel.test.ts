@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { adminNavigation, adminPages, bookRowCells, dashboardMetrics, siteRowCells, taskRowCells } from './adminModel'
+import {
+  adminNavigation,
+  adminPages,
+  bookRowCells,
+  complaintRowCells,
+  dashboardMetrics,
+  siteRowCells,
+  taskRowCells,
+} from './adminModel'
 
 describe('admin console model', () => {
   it('defines all MVP navigation entries in Chinese', () => {
@@ -90,6 +98,24 @@ describe('admin console model', () => {
       '0',
       '-',
       '-',
+      '查看',
+    ])
+  })
+
+  it('maps copyright complaint rows to Chinese table cells', () => {
+    expect(complaintRowCells({
+      id: 'complaint-1',
+      source: 'email',
+      bookTitle: 'Dragon Gate',
+      chapterTitle: 'Chapter 1',
+      status: 'OPEN',
+      note: '等待处理',
+    })).toEqual([
+      'email',
+      'Dragon Gate',
+      'Chapter 1',
+      'OPEN',
+      '等待处理',
       '查看',
     ])
   })

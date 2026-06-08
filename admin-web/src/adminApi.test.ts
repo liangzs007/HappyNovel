@@ -108,4 +108,35 @@ describe('admin api client', () => {
       },
     ])
   })
+
+  it('loads compliance config and complaint rows from backend response', async () => {
+    const api = createAdminApi({
+      baseUrl: 'http://localhost:8080',
+      fetcher: async (url) => {
+        expect(url).toBe('http://localhost:8080/api/admin/compliance')
+        return new Response(JSON.stringify({
+          config: {
+            privacyPolicyTitle: 'HappyNovel Privacy Policy',
+            privacyPolicyUrl: 'https://example.com/privacy',
+            termsTitle: 'HappyNovel Terms of Service',
+            termsUrl: 'https://example.com/terms',
+            adDisclosureEnabled: true,
+            adDisclosureText: 'This app may show ads.',
+          },
+          complaints: [],
+          emptyText: '暂无版权投诉记录',
+        }))
+      },
+    })
+
+    const compliance = await api.loadCompliance()
+
+    expect(compliance.configCards).toEqual([
+      '隐私政策：HappyNovel Privacy Policy',
+      '服务条款：HappyNovel Terms of Service',
+      '广告披露：已启用',
+    ])
+    expect(compliance.complaints).toEqual([])
+    expect(compliance.emptyText).toBe('暂无版权投诉记录')
+  })
 })
