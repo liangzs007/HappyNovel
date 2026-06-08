@@ -11,62 +11,188 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.graphics.drawable.GradientDrawable
-import com.happynovel.reader.NavigationTab
+import com.happynovel.reader.BookDetailUiState
+import com.happynovel.reader.BookSummary
+import com.happynovel.reader.ChapterCatalogUiState
+import com.happynovel.reader.ChapterRowUiState
 import com.happynovel.reader.FileReaderStateStore
+import com.happynovel.reader.HomeUiState
+import com.happynovel.reader.ReaderScreenRoute
+import com.happynovel.reader.ReaderNavigation
+import com.happynovel.reader.ReaderNavigationState
 import com.happynovel.reader.PersistedReaderLocalRepository
-import com.happynovel.reader.ReaderLaunchTextModel
 import com.happynovel.reader.ReaderAppCoordinator
-import com.happynovel.reader.ReaderLaunchTextModelFactory
 import com.happynovel.reader.ReaderRemoteDataSourceFactory
 import com.happynovel.reader.ReaderScreenLoader
+import com.happynovel.reader.ReaderUiState
+import com.happynovel.reader.ScreenLoadState
 import java.io.File
 
 class MainActivity : Activity() {
+    private lateinit var loader: ReaderScreenLoader
+    private val navigationState = ReaderNavigationState()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(buildContent())
-    }
-
-    private fun buildContent(): ScrollView {
         val remoteDataSource = ReaderRemoteDataSourceFactory.create(BuildConfig.HAPPYNOVEL_API_BASE_URL)
         val localRepository = PersistedReaderLocalRepository(
             FileReaderStateStore(File(filesDir, "reader-state.json")),
         )
-        val loader = ReaderScreenLoader(
+        loader = ReaderScreenLoader(
             ReaderAppCoordinator(remoteDataSource, localRepository),
         )
-        val textModel = ReaderLaunchTextModelFactory.create(loader)
+        render()
+    }
 
+    private fun render() {
+        setContentView(buildContent())
+    }
+
+    private fun buildContent(): ScrollView {
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(20), dp(28), dp(20), dp(28))
             setBackgroundColor(Color.rgb(247, 248, 250))
         }
 
-        content.addView(header(textModel))
-        content.addView(filterSummary(textModel.bookListFilterLabel))
-        textModel.sections.filter { it.body.isNotBlank() }.forEach { section ->
-            content.addView(sectionCard(section.title, section.body))
+        when (val route = navigationState.currentRoute) {
+            ReaderScreenRoute.Home -> content.renderHome()
+            ReaderScreenRoute.Categories -> content.renderCategories()
+            ReaderScreenRoute.Bookshelf -> content.renderBookshelf()
+            is ReaderScreenRoute.BookDetail -> content.renderBookDetail(route.bookId)
+            is ReaderScreenRoute.ChapterCatalog -> content.renderChapterCatalog(route.bookId)
+            is ReaderScreenRoute.Reader -> content.renderReader(route.bookId, route.chapterId)
         }
-        content.addView(bottomTabs(textModel.bottomTabs))
 
         return ScrollView(this).apply {
             addView(content)
         }
     }
 
-    private fun header(textModel: ReaderLaunchTextModel): LinearLayout = LinearLayout(this).apply {
+    private fun LinearLayout.renderHome() {
+        addView(header("HappyNovel", "Discover translated web novels and continue reading."))
+        renderLoadState(
+            state = loader.home(),
+            onContent = { home ->
+                home.sections.forEach { section ->
+                    addView(sectionCard(section.title) {
+                        section.books.forEach { book ->
+                            addView(bookRow(book))
+                        }
+                    })
+                }
+            },
+        )
+        addView(bottomTabs("home"))
+    }
+
+    private fun LinearLayout.renderCategories() {
+        addView(header("Categories", "Browse by genre and status."))
+        addView(filterSummary("Fantasy / ongoing / popular"))
+        renderLoadState(
+            state = loader.books(category = "fantasy", status = "ongoing", sort = "popular", limit = 12),
+            onContent = { list ->
+                addView(sectionCard(list.title) {
+                    list.books.forEach { book ->
+                        addView(bookRow(book))
+                    }
+                })
+            },
+        )
+        addView(bottomTabs("categories"))
+    }
+
+    private fun LinearLayout.renderBookshelf() {
+        addView(header("Bookshelf", "Saved books and reading progress."))
+        addView(sectionCard("Bookshelf") {
+            addView(body("No saved books yet."))
+        })
+        addView(bottomTabs("bookshelf"))
+    }
+
+    private fun LinearLayout.renderBookDetail(bookId: String) {
+        renderBackButton()
+        renderLoadState(
+            state = loader.bookDetail(bookId),
+            onContent = { detail ->
+                addView(header(detail.title, detail.author))
+                addView(sectionCard("About") {
+                    addView(body(detail.description))
+                    addView(body("${detail.status} · ${detail.chapterCountLabel}"))
+                    addView(actionButton(detail.primaryAction) {
+                        navigationState.openReader(bookId, "chapter-seed-1")
+                        render()
+                    })
+                    addView(actionButton("Chapters") {
+                        navigationState.openChapters(bookId)
+                        render()
+                    })
+                })
+            },
+        )
+    }
+
+    private fun LinearLayout.renderChapterCatalog(bookId: String) {
+        renderBackButton()
+        renderLoadState(
+            state = loader.chapterCatalog(bookId),
+            onContent = { catalog ->
+                addView(header(catalog.title, "Select a chapter to read."))
+                addView(sectionCard("Chapters") {
+                    catalog.chapters.forEach { chapter ->
+                        addView(chapterRow(bookId, chapter))
+                    }
+                })
+            },
+        )
+    }
+
+    private fun LinearLayout.renderReader(bookId: String, chapterId: String) {
+        renderBackButton()
+        renderLoadState(
+            state = loader.reader(bookId, chapterId),
+            onContent = { reader ->
+                addView(header(reader.title, "${reader.fontSizeLabel} · ${reader.progressLabel}"))
+                addView(sectionCard("Reader") {
+                    reader.paragraphs.forEach { paragraph ->
+                        addView(body(paragraph))
+                    }
+                })
+            },
+        )
+    }
+
+    private fun <T> LinearLayout.renderLoadState(
+        state: ScreenLoadState<T>,
+        onContent: LinearLayout.(T) -> Unit,
+    ) {
+        when {
+            state.content != null -> onContent(state.content)
+            else -> addView(sectionCard("Status") {
+                addView(body(state.message))
+            })
+        }
+    }
+
+    private fun LinearLayout.renderBackButton() {
+        addView(actionButton("Back") {
+            navigationState.goBack()
+            render()
+        })
+    }
+
+    private fun header(title: String, subtitle: String): LinearLayout = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL
         setPadding(0, 0, 0, dp(12))
         addView(TextView(this@MainActivity).apply {
-            text = textModel.title
+            text = title
             textSize = 30f
             setTextColor(Color.rgb(22, 28, 36))
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.START
         })
         addView(TextView(this@MainActivity).apply {
-            text = "Discover translated web novels and continue reading."
+            text = subtitle
             textSize = 15f
             setTextColor(Color.rgb(91, 101, 116))
             setPadding(0, dp(6), 0, 0)
@@ -81,7 +207,7 @@ class MainActivity : Activity() {
         background = roundedBackground(Color.rgb(232, 239, 247), radius = dp(8))
     }
 
-    private fun sectionCard(title: String, body: String): LinearLayout = LinearLayout(this).apply {
+    private fun sectionCard(title: String, contentBuilder: LinearLayout.() -> Unit): LinearLayout = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL
         setPadding(dp(16), dp(14), dp(16), dp(14))
         background = roundedBackground(Color.WHITE, radius = dp(8), strokeColor = Color.rgb(226, 231, 237))
@@ -93,7 +219,7 @@ class MainActivity : Activity() {
         }
         addView(sectionTitle(title))
         addView(divider())
-        addView(body(body))
+        contentBuilder()
     }
 
     private fun sectionTitle(text: String): TextView = TextView(this).apply {
@@ -112,18 +238,66 @@ class MainActivity : Activity() {
         setPadding(0, dp(10), 0, 0)
     }
 
-    private fun bottomTabs(tabs: List<NavigationTab>): HorizontalScrollView = HorizontalScrollView(this).apply {
+    private fun bookRow(book: BookSummary): TextView = TextView(this).apply {
+        text = "${book.title}\n${book.author}\n${book.latestChapterTitle}"
+        textSize = 15f
+        setTextColor(Color.rgb(55, 65, 81))
+        setLineSpacing(4f, 1f)
+        setPadding(0, dp(12), 0, dp(12))
+        setOnClickListener {
+            navigationState.openBook(book.id)
+            render()
+        }
+    }
+
+    private fun chapterRow(bookId: String, chapter: ChapterRowUiState): TextView = TextView(this).apply {
+        text = "${chapter.order}. ${chapter.title}"
+        textSize = 15f
+        setTextColor(Color.rgb(55, 65, 81))
+        setPadding(0, dp(12), 0, dp(12))
+        setOnClickListener {
+            navigationState.openReader(bookId, chapter.id)
+            render()
+        }
+    }
+
+    private fun actionButton(text: String, onClick: () -> Unit): TextView = TextView(this).apply {
+        this.text = text
+        textSize = 15f
+        gravity = Gravity.CENTER
+        setTextColor(Color.WHITE)
+        typeface = Typeface.DEFAULT_BOLD
+        setPadding(dp(14), dp(10), dp(14), dp(10))
+        background = roundedBackground(Color.rgb(40, 91, 145), radius = dp(8))
+        layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+        ).apply {
+            topMargin = dp(12)
+            rightMargin = dp(8)
+        }
+        setOnClickListener { onClick() }
+    }
+
+    private fun bottomTabs(activeKey: String): HorizontalScrollView = HorizontalScrollView(this).apply {
         isHorizontalScrollBarEnabled = false
         setPadding(0, dp(18), 0, 0)
         addView(LinearLayout(this@MainActivity).apply {
             orientation = LinearLayout.HORIZONTAL
-            tabs.forEachIndexed { index, tab ->
-                addView(tabLabel(tab.label, isSelected = index == 0))
+            ReaderNavigation.primaryTabs.forEach { tab ->
+                addView(tabLabel(tab.label, isSelected = tab.key == activeKey) {
+                    when (tab.key) {
+                        "home" -> navigationState.openHome()
+                        "categories" -> navigationState.openCategories()
+                        "bookshelf" -> navigationState.openBookshelf()
+                    }
+                    render()
+                })
             }
         })
     }
 
-    private fun tabLabel(text: String, isSelected: Boolean): TextView = TextView(this).apply {
+    private fun tabLabel(text: String, isSelected: Boolean, onClick: () -> Unit): TextView = TextView(this).apply {
         this.text = text
         textSize = 14f
         gravity = Gravity.START
@@ -140,6 +314,7 @@ class MainActivity : Activity() {
         ).apply {
             rightMargin = dp(8)
         }
+        setOnClickListener { onClick() }
     }
 
     private fun divider(): View = View(this).apply {
