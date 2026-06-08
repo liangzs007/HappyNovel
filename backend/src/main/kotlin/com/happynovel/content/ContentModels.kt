@@ -46,6 +46,10 @@ data class BookDetail(
 
 interface ContentRepository {
     fun homeBooks(): List<BookSummary>
+    fun recommendedBooks(): List<BookSummary> = homeBooks()
+    fun latestBooks(): List<BookSummary> = homeBooks()
+    fun popularBooks(): List<BookSummary> = homeBooks()
+    fun newBooks(): List<BookSummary> = homeBooks()
     fun categories(): List<Category>
     fun statuses(): List<String>
     fun bookDetail(bookId: String): BookDetail

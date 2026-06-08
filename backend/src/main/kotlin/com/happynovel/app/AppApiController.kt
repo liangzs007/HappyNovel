@@ -48,13 +48,12 @@ class AppApiController(
 ) {
     @GetMapping("/home")
     fun home(): HomeResponse {
-        val books = contentRepository.homeBooks()
         return HomeResponse(
             appName = "HappyNovel",
-            recommended = books,
-            latestUpdates = books,
-            popular = books,
-            newBooks = books,
+            recommended = contentRepository.recommendedBooks(),
+            latestUpdates = contentRepository.latestBooks(),
+            popular = contentRepository.popularBooks(),
+            newBooks = contentRepository.newBooks(),
         )
     }
 
