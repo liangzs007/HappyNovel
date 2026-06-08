@@ -590,6 +590,71 @@ describe('admin api client', () => {
     ])
   })
 
+  it('loads pending glossary rows from backend response', async () => {
+    const api = createAdminApi({
+      baseUrl: 'http://localhost:8080',
+      fetcher: async (url) => {
+        expect(url).toBe('http://localhost:8080/api/admin/glossary/pending?bookId=book-seed-1')
+        return new Response(JSON.stringify({
+          emptyText: '暂无待确认术语。',
+          pendingTerms: [
+            {
+              id: 'pending-1',
+              bookId: 'book-seed-1',
+              chapterId: 'chapter-seed-1',
+              sourceTerm: '青云宗',
+              suggestedTranslation: 'Azure Cloud Sect',
+              occurrenceCount: 3,
+              status: 'PENDING',
+            },
+          ],
+        }))
+      },
+    })
+
+    const response = await api.listPendingGlossaryTerms('book-seed-1')
+
+    expect(response.emptyText).toBe('暂无待确认术语。')
+    expect(response.pendingTerms).toEqual([
+      {
+        id: 'pending-1',
+        bookId: 'book-seed-1',
+        chapterId: 'chapter-seed-1',
+        sourceTerm: '青云宗',
+        suggestedTranslation: 'Azure Cloud Sect',
+        occurrenceCount: '3',
+        status: 'PENDING',
+      },
+    ])
+  })
+
+  it('confirms pending glossary term through backend API', async () => {
+    const api = createAdminApi({
+      baseUrl: 'http://localhost:8080',
+      fetcher: async (url, init) => {
+        expect(url).toBe('http://localhost:8080/api/admin/glossary/pending/pending-1/confirm')
+        expect(init?.method).toBe('POST')
+        expect(JSON.parse(String(init?.body))).toEqual({
+          translatedTerm: 'Azure Cloud Sect',
+          type: 'ORGANIZATION',
+          description: '主角初入的宗门',
+        })
+        return new Response(JSON.stringify({
+          emptyText: '暂无待确认术语。',
+          pendingTerms: [],
+        }))
+      },
+    })
+
+    const response = await api.confirmPendingGlossaryTerm('pending-1', {
+      translatedTerm: 'Azure Cloud Sect',
+      type: 'ORGANIZATION',
+      description: '主角初入的宗门',
+    })
+
+    expect(response.pendingTerms).toEqual([])
+  })
+
   it('loads admin audit rows from backend response', async () => {
     const api = createAdminApi({
       baseUrl: 'http://localhost:8080',

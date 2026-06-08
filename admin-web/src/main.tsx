@@ -11,10 +11,13 @@ import {
   type AdminComplianceResult,
   type AdminGlossaryResult,
   type AdminGlossaryTermRow,
+  type AdminPendingGlossaryResult,
+  type AdminPendingGlossaryTermRow,
   type AdminRecommendationRow,
   type AdminRecommendationsResult,
   type AdminSiteRow,
   type AdminTaskRow,
+  type ConfirmPendingGlossaryTermRequest,
   type CreateComplaintRequest,
   type CreateBookSourceRequest,
   type CreateSiteRequest,
@@ -31,6 +34,7 @@ import {
   complaintRowCells,
   dashboardMetrics,
   glossaryRowCells,
+  pendingGlossaryRowCells,
   recommendationRowCells,
   siteRowCells,
   taskRowCells,
@@ -83,6 +87,7 @@ function ManagementPage({
   siteCreateForm,
   taskRetryForm,
   glossaryCreateForm,
+  pendingGlossaryPanel,
   complianceForms,
 }: {
   pageKey: AdminPageKey
@@ -92,6 +97,7 @@ function ManagementPage({
   siteCreateForm?: React.ReactNode
   taskRetryForm?: React.ReactNode
   glossaryCreateForm?: React.ReactNode
+  pendingGlossaryPanel?: React.ReactNode
   complianceForms?: React.ReactNode
 }) {
   const page = adminPages[pageKey]
@@ -115,6 +121,7 @@ function ManagementPage({
       {pageKey === 'sites' ? siteCreateForm : null}
       {pageKey === 'tasks' ? taskRetryForm : null}
       {pageKey === 'glossary' ? glossaryCreateForm : null}
+      {pageKey === 'glossary' ? pendingGlossaryPanel : null}
       {pageKey === 'compliance' ? complianceForms : null}
       <div className="filters">
         <input placeholder="关键词搜索" />
@@ -551,6 +558,103 @@ function GlossaryQuickCreateForm({
   )
 }
 
+function PendingGlossaryPanel({
+  result,
+  isLoading,
+  isSubmitting,
+  error,
+  onConfirm,
+}: {
+  result: AdminPendingGlossaryResult | null
+  isLoading: boolean
+  isSubmitting: boolean
+  error: string | null
+  onConfirm: (id: string, request: ConfirmPendingGlossaryTermRequest) => void
+}) {
+  const terms = result?.pendingTerms ?? []
+  const emptyText = result?.emptyText ?? '暂无待确认术语。'
+
+  return (
+    <section className="pending-glossary" aria-label="待确认术语">
+      <div className="pending-glossary-heading">
+        <h3>待确认术语</h3>
+        <span>{isLoading ? '加载中' : `${terms.length} 条`}</span>
+      </div>
+      {error ? <p className="inline-error">{error}</p> : null}
+      {!isLoading && !error && terms.length === 0 ? <p className="inline-empty">{emptyText}</p> : null}
+      {terms.length > 0 ? (
+        <div className="pending-glossary-list">
+          {terms.map((term) => (
+            <PendingGlossaryConfirmRow
+              isSubmitting={isSubmitting}
+              key={term.id}
+              term={term}
+              onConfirm={onConfirm}
+            />
+          ))}
+        </div>
+      ) : null}
+    </section>
+  )
+}
+
+function PendingGlossaryConfirmRow({
+  term,
+  isSubmitting,
+  onConfirm,
+}: {
+  term: AdminPendingGlossaryTermRow
+  isSubmitting: boolean
+  onConfirm: (id: string, request: ConfirmPendingGlossaryTermRequest) => void
+}) {
+  const [form, setForm] = useState<ConfirmPendingGlossaryTermRequest>({
+    translatedTerm: term.suggestedTranslation === '-' ? '' : term.suggestedTranslation,
+    type: 'OTHER',
+    description: '',
+  })
+
+  return (
+    <form
+      className="pending-glossary-row"
+      onSubmit={(event) => {
+        event.preventDefault()
+        onConfirm(term.id, form)
+      }}
+    >
+      {pendingGlossaryRowCells(term).slice(0, 4).map((cell, index) => (
+        <span key={`${term.id}-${index}`}>{cell}</span>
+      ))}
+      <input
+        aria-label={`${term.sourceTerm} 确认译名`}
+        value={form.translatedTerm}
+        onChange={(event) => setForm({ ...form, translatedTerm: event.target.value })}
+      />
+      <select
+        aria-label={`${term.sourceTerm} 术语类型`}
+        value={form.type}
+        onChange={(event) => setForm({ ...form, type: event.target.value })}
+      >
+        <option value="PERSON">人物</option>
+        <option value="PLACE">地点</option>
+        <option value="ORGANIZATION">组织</option>
+        <option value="SKILL">技能</option>
+        <option value="ITEM">物品</option>
+        <option value="TITLE">称谓</option>
+        <option value="OTHER">其他</option>
+      </select>
+      <input
+        aria-label={`${term.sourceTerm} 备注`}
+        placeholder="备注"
+        value={form.description}
+        onChange={(event) => setForm({ ...form, description: event.target.value })}
+      />
+      <button type="submit" disabled={isSubmitting || !form.translatedTerm}>
+        确认
+      </button>
+    </form>
+  )
+}
+
 interface RemoteTableRow {
   id: string
   cells: string[]
@@ -582,9 +686,13 @@ function App() {
   const [isChaptersLoading, setChaptersLoading] = useState(false)
   const [chaptersError, setChaptersError] = useState<string | null>(null)
   const [glossaryResult, setGlossaryResult] = useState<AdminGlossaryResult | null>(null)
+  const [pendingGlossaryResult, setPendingGlossaryResult] = useState<AdminPendingGlossaryResult | null>(null)
   const [isGlossaryLoading, setGlossaryLoading] = useState(false)
+  const [isPendingGlossaryLoading, setPendingGlossaryLoading] = useState(false)
   const [isGlossarySubmitting, setGlossarySubmitting] = useState(false)
+  const [isPendingGlossarySubmitting, setPendingGlossarySubmitting] = useState(false)
   const [glossaryError, setGlossaryError] = useState<string | null>(null)
+  const [pendingGlossaryError, setPendingGlossaryError] = useState<string | null>(null)
   const [auditResult, setAuditResult] = useState<AdminAuditResult | null>(null)
   const [isAuditLoading, setAuditLoading] = useState(false)
   const [auditError, setAuditError] = useState<string | null>(null)
@@ -643,6 +751,19 @@ function App() {
       .catch(() => setGlossaryError('术语列表加载失败，请检查后端服务。'))
       .finally(() => setGlossaryLoading(false))
   }, [activePage, glossaryResult])
+
+  useEffect(() => {
+    if (activePage !== 'glossary' || pendingGlossaryResult) {
+      return
+    }
+
+    setPendingGlossaryLoading(true)
+    setPendingGlossaryError(null)
+    adminApi.listPendingGlossaryTerms()
+      .then(setPendingGlossaryResult)
+      .catch(() => setPendingGlossaryError('待确认术语加载失败，请检查后端服务。'))
+      .finally(() => setPendingGlossaryLoading(false))
+  }, [activePage, pendingGlossaryResult])
 
   useEffect(() => {
     if (activePage !== 'audit' || auditResult) {
@@ -820,6 +941,26 @@ function App() {
                   .then(setGlossaryResult)
                   .catch(() => setGlossaryError('术语保存失败，请检查书籍 ID 和后端服务。'))
                   .finally(() => setGlossarySubmitting(false))
+              }}
+            />
+          )}
+          pendingGlossaryPanel={(
+            <PendingGlossaryPanel
+              error={pendingGlossaryError}
+              isLoading={isPendingGlossaryLoading}
+              isSubmitting={isPendingGlossarySubmitting}
+              result={pendingGlossaryResult}
+              onConfirm={(id, request) => {
+                setPendingGlossarySubmitting(true)
+                setPendingGlossaryError(null)
+                adminApi.confirmPendingGlossaryTerm(id, request)
+                  .then((result) => {
+                    setPendingGlossaryResult(result)
+                    return adminApi.listGlossaryTerms()
+                  })
+                  .then(setGlossaryResult)
+                  .catch(() => setPendingGlossaryError('待确认术语确认失败，请检查译名和后端服务。'))
+                  .finally(() => setPendingGlossarySubmitting(false))
               }}
             />
           )}

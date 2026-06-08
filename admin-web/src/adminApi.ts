@@ -92,6 +92,21 @@ export interface AdminGlossaryResult {
   emptyText: string
 }
 
+export interface AdminPendingGlossaryTermRow {
+  id: string
+  bookId: string
+  chapterId: string
+  sourceTerm: string
+  suggestedTranslation: string
+  occurrenceCount: string
+  status: string
+}
+
+export interface AdminPendingGlossaryResult {
+  pendingTerms: AdminPendingGlossaryTermRow[]
+  emptyText: string
+}
+
 export interface AdminAuditRow {
   id: string
   actor: string
@@ -151,6 +166,12 @@ export interface CreateComplaintRequest {
 export interface CreateGlossaryTermRequest {
   bookId: string
   sourceTerm: string
+  translatedTerm: string
+  type: string
+  description: string
+}
+
+export interface ConfirmPendingGlossaryTermRequest {
   translatedTerm: string
   type: string
   description: string
@@ -248,6 +269,21 @@ interface BackendAdminGlossaryTermRow {
 
 interface BackendAdminGlossaryResponse {
   terms: BackendAdminGlossaryTermRow[]
+  emptyText: string
+}
+
+interface BackendAdminPendingGlossaryTermRow {
+  id: string
+  bookId: string
+  chapterId?: string | null
+  sourceTerm: string
+  suggestedTranslation: string
+  occurrenceCount: number
+  status: string
+}
+
+interface BackendAdminPendingGlossaryResponse {
+  pendingTerms: BackendAdminPendingGlossaryTermRow[]
   emptyText: string
 }
 
@@ -448,6 +484,38 @@ export function createAdminApi(options: AdminApiOptions = {}) {
       }
     },
 
+    async listPendingGlossaryTerms(bookId?: string): Promise<AdminPendingGlossaryResult> {
+      const query = bookId ? `?bookId=${encodeURIComponent(bookId)}` : ''
+      const response = await fetcher(`${baseUrl}/api/admin/glossary/pending${query}`)
+      if (!response.ok) {
+        throw new Error(`待确认术语加载失败：${response.status}`)
+      }
+      const payload = await response.json() as BackendAdminPendingGlossaryResponse
+      return {
+        emptyText: payload.emptyText,
+        pendingTerms: payload.pendingTerms.map(toPendingGlossaryTermRow),
+      }
+    },
+
+    async confirmPendingGlossaryTerm(
+      id: string,
+      request: ConfirmPendingGlossaryTermRequest,
+    ): Promise<AdminPendingGlossaryResult> {
+      const response = await fetcher(`${baseUrl}/api/admin/glossary/pending/${id}/confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(request),
+      })
+      if (!response.ok) {
+        throw new Error(`待确认术语确认失败：${response.status}`)
+      }
+      const payload = await response.json() as BackendAdminPendingGlossaryResponse
+      return {
+        emptyText: payload.emptyText,
+        pendingTerms: payload.pendingTerms.map(toPendingGlossaryTermRow),
+      }
+    },
+
     async listAuditLogs(): Promise<AdminAuditResult> {
       const response = await fetcher(`${baseUrl}/api/admin/audit`)
       if (!response.ok) {
@@ -555,5 +623,17 @@ function toGlossaryTermRow(term: BackendAdminGlossaryTermRow): AdminGlossaryTerm
     type: term.type,
     enabledStatus: term.enabledStatus,
     updatedAt: '-',
+  }
+}
+
+function toPendingGlossaryTermRow(term: BackendAdminPendingGlossaryTermRow): AdminPendingGlossaryTermRow {
+  return {
+    id: term.id,
+    bookId: term.bookId,
+    chapterId: term.chapterId ?? '-',
+    sourceTerm: term.sourceTerm,
+    suggestedTranslation: term.suggestedTranslation || '-',
+    occurrenceCount: String(term.occurrenceCount),
+    status: term.status,
   }
 }

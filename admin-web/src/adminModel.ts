@@ -90,6 +90,16 @@ export interface AdminGlossaryTableRow {
   updatedAt: string
 }
 
+export interface AdminPendingGlossaryTableRow {
+  id: string
+  bookId: string
+  chapterId: string
+  sourceTerm: string
+  suggestedTranslation: string
+  occurrenceCount: string
+  status: string
+}
+
 export interface AdminAuditTableRow {
   id: string
   actor: string
@@ -270,6 +280,16 @@ export function glossaryRowCells(term: AdminGlossaryTableRow): string[] {
     term.enabledStatus,
     term.updatedAt,
     '编辑',
+  ]
+}
+
+export function pendingGlossaryRowCells(term: AdminPendingGlossaryTableRow): string[] {
+  return [
+    term.sourceTerm,
+    term.suggestedTranslation,
+    term.occurrenceCount,
+    term.status,
+    '确认',
   ]
 }
 

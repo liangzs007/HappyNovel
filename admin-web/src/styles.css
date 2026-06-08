@@ -263,6 +263,58 @@ button.secondary {
   font-size: 13px;
 }
 
+.pending-glossary {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 14px;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  background: #fffbeb;
+}
+
+.pending-glossary-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pending-glossary h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.pending-glossary-heading span,
+.inline-empty,
+.inline-error {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.inline-error {
+  color: #b91c1c;
+}
+
+.pending-glossary-list {
+  display: grid;
+  gap: 8px;
+}
+
+.pending-glossary-row {
+  display: grid;
+  grid-template-columns: minmax(100px, 1fr) minmax(140px, 1.2fr) 64px 90px minmax(140px, 1.2fr) 110px minmax(140px, 1.2fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.pending-glossary-row span {
+  overflow-wrap: anywhere;
+  color: #334155;
+  font-size: 13px;
+}
+
 .quick-form button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
@@ -302,4 +354,20 @@ th {
   padding: 32px;
   color: #64748b;
   text-align: center;
+}
+
+@media (max-width: 960px) {
+  .shell,
+  .login-panel,
+  .login-panel form,
+  .quick-form,
+  .quick-form-sites,
+  .quick-form-books,
+  .quick-form-tasks,
+  .quick-form-compliance,
+  .quick-form-ad-config,
+  .quick-form-complaint,
+  .pending-glossary-row {
+    grid-template-columns: 1fr;
+  }
 }

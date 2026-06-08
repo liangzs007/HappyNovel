@@ -8,6 +8,7 @@ import {
   complaintRowCells,
   dashboardMetrics,
   glossaryRowCells,
+  pendingGlossaryRowCells,
   recommendationRowCells,
   siteRowCells,
   taskRowCells,
@@ -159,6 +160,24 @@ describe('admin console model', () => {
       '启用',
       '-',
       '编辑',
+    ])
+  })
+
+  it('maps pending glossary rows to Chinese table cells', () => {
+    expect(pendingGlossaryRowCells({
+      id: 'pending-1',
+      bookId: 'book-seed-1',
+      chapterId: 'chapter-seed-1',
+      sourceTerm: '青云宗',
+      suggestedTranslation: 'Azure Cloud Sect',
+      occurrenceCount: '3',
+      status: 'PENDING',
+    })).toEqual([
+      '青云宗',
+      'Azure Cloud Sect',
+      '3',
+      'PENDING',
+      '确认',
     ])
   })
 
