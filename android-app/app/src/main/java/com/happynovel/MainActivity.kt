@@ -11,6 +11,11 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.graphics.drawable.GradientDrawable
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.AdSize
+import com.google.android.gms.ads.AdView
+import com.google.android.gms.ads.MobileAds
+import com.happynovel.reader.AdMobRuntimeConfig
 import com.happynovel.reader.BookDetailUiState
 import com.happynovel.reader.BookSummary
 import com.happynovel.reader.BookshelfUiState
@@ -33,10 +38,13 @@ import java.io.File
 class MainActivity : Activity() {
     private lateinit var loader: ReaderScreenLoader
     private lateinit var coordinator: ReaderAppCoordinator
+    private lateinit var adMobRuntimeConfig: AdMobRuntimeConfig
     private val navigationState = ReaderNavigationState()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        MobileAds.initialize(this)
+        adMobRuntimeConfig = AdMobRuntimeConfig.from(BuildConfig.ADMOB_READER_BANNER_AD_UNIT_ID)
         val remoteDataSource = ReaderRemoteDataSourceFactory.create(BuildConfig.HAPPYNOVEL_API_BASE_URL)
         val localRepository = DatabaseReaderLocalRepository(
             FileReaderLocalDatabase(File(filesDir, "reader-local-db.json")),
@@ -187,7 +195,7 @@ class MainActivity : Activity() {
                         addView(readerParagraph(paragraph, reader.fontSizeSp, reader.theme))
                     }
                     reader.readerAdLabel?.let { label ->
-                        addView(adPlaceholder(label, reader.theme))
+                        addView(readerAdView(label, reader.theme))
                     }
                     reader.adDisclosureText?.let { disclosure ->
                         addView(readerFootnote(disclosure, reader.theme))
@@ -320,6 +328,24 @@ class MainActivity : Activity() {
             LinearLayout.LayoutParams.WRAP_CONTENT,
         ).apply {
             topMargin = dp(16)
+        }
+    }
+
+    private fun readerAdView(label: String, theme: ReaderTheme): View {
+        if (!adMobRuntimeConfig.hasReaderBanner) {
+            return adPlaceholder(label, theme)
+        }
+        return AdView(this).apply {
+            setAdSize(AdSize.BANNER)
+            adUnitId = adMobRuntimeConfig.readerBannerAdUnitId
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply {
+                topMargin = dp(16)
+                bottomMargin = dp(8)
+            }
+            loadAd(AdRequest.Builder().build())
         }
     }
 
