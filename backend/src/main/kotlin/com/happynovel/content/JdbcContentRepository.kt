@@ -7,6 +7,8 @@ import java.time.OffsetDateTime
 
 interface ContentDatabaseClient {
     fun query(sql: String, vararg args: Any?): List<Map<String, Any?>>
+
+    fun update(sql: String, vararg args: Any?): Int
 }
 
 class JdbcTemplateContentDatabaseClient(
@@ -14,6 +16,9 @@ class JdbcTemplateContentDatabaseClient(
 ) : ContentDatabaseClient {
     override fun query(sql: String, vararg args: Any?): List<Map<String, Any?>> =
         jdbcTemplate.queryForList(sql, *args)
+
+    override fun update(sql: String, vararg args: Any?): Int =
+        jdbcTemplate.update(sql, *args)
 }
 
 class JdbcContentRepository(

@@ -40,4 +40,6 @@ private class RecordingContentDatabaseClient : ContentDatabaseClient {
         queries.add(sql)
         return FakeContentDatabaseClient().query(sql, *args)
     }
+
+    override fun update(sql: String, vararg args: Any?): Int = 1
 }

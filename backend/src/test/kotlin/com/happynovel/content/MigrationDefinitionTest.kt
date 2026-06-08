@@ -45,4 +45,14 @@ class MigrationDefinitionTest {
         assertTrue(migration.contains("create table if not exists book_category"))
         assertTrue(migration.contains("create index if not exists idx_book_category_category"))
     }
+
+    @Test
+    fun `third migration defines admin policy persistence fields`() {
+        val migration = Files.readString(Path.of("src/main/resources/db/migration/V3__admin_policy_fields.sql"))
+
+        assertTrue(migration.contains("privacy_policy_title"))
+        assertTrue(migration.contains("ad_disclosure_enabled"))
+        assertTrue(migration.contains("book_title"))
+        assertTrue(migration.contains("idx_copyright_complaint_created_at"))
+    }
 }

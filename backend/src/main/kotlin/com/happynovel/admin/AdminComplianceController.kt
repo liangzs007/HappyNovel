@@ -1,13 +1,19 @@
 package com.happynovel.admin
 
+import com.happynovel.content.ContentDatabaseClient
+import com.happynovel.content.JdbcTemplateContentDatabaseClient
+import com.happynovel.content.MissingContentDatabaseClient
+import org.springframework.beans.factory.ObjectProvider
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.core.env.Environment
+import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
 import java.util.UUID
 
 data class ComplianceConfigResponse(
@@ -101,6 +107,141 @@ class InMemoryCompliancePolicyService : CompliancePolicyService {
     }
 }
 
+class JdbcCompliancePolicyService(
+    private val databaseClient: ContentDatabaseClient,
+) : CompliancePolicyService {
+    override fun current(): ComplianceConfigResponse =
+        databaseClient.query(
+            """
+                select
+                    privacy_policy_title,
+                    privacy_policy_url,
+                    terms_title,
+                    terms_url,
+                    ad_disclosure_enabled,
+                    ad_disclosure
+                from compliance_config
+                where id = ?
+                limit 1
+            """.trimIndent(),
+            GLOBAL_COMPLIANCE_CONFIG_ID,
+        ).firstOrNull()?.let(::mapComplianceConfig) ?: DEFAULT_CONFIG
+
+    override fun update(request: UpdateComplianceConfigRequest): ComplianceConfigResponse {
+        val config = ComplianceConfigResponse(
+            privacyPolicyTitle = request.privacyPolicyTitle,
+            privacyPolicyUrl = request.privacyPolicyUrl,
+            termsTitle = request.termsTitle,
+            termsUrl = request.termsUrl,
+            adDisclosureEnabled = request.adDisclosureEnabled,
+            adDisclosureText = request.adDisclosureText,
+        )
+        databaseClient.update(
+            """
+                insert into compliance_config(
+                    id,
+                    privacy_policy_title,
+                    privacy_policy_url,
+                    terms_title,
+                    terms_url,
+                    ad_disclosure_enabled,
+                    ad_disclosure
+                )
+                values (?, ?, ?, ?, ?, ?, ?)
+                on conflict (id) do update set
+                    privacy_policy_title = excluded.privacy_policy_title,
+                    privacy_policy_url = excluded.privacy_policy_url,
+                    terms_title = excluded.terms_title,
+                    terms_url = excluded.terms_url,
+                    ad_disclosure_enabled = excluded.ad_disclosure_enabled,
+                    ad_disclosure = excluded.ad_disclosure,
+                    updated_at = now()
+            """.trimIndent(),
+            GLOBAL_COMPLIANCE_CONFIG_ID,
+            config.privacyPolicyTitle,
+            config.privacyPolicyUrl,
+            config.termsTitle,
+            config.termsUrl,
+            config.adDisclosureEnabled,
+            config.adDisclosureText,
+        )
+        return config
+    }
+
+    override fun complaints(): List<CopyrightComplaintRow> =
+        databaseClient.query(
+            """
+                select id::text as id, source, book_title, chapter_title, status, note
+                from copyright_complaint
+                order by created_at desc
+            """.trimIndent(),
+        ).map(::mapComplaint)
+
+    override fun createComplaint(request: CreateCopyrightComplaintRequest): CopyrightComplaintRow {
+        val complaint = CopyrightComplaintRow(
+            source = request.source,
+            bookTitle = request.bookTitle,
+            chapterTitle = request.chapterTitle,
+            status = "待处理",
+            note = request.note,
+        )
+        databaseClient.update(
+            """
+                insert into copyright_complaint(
+                    id,
+                    source,
+                    book_title,
+                    chapter_title,
+                    status,
+                    note,
+                    complainant,
+                    description
+                )
+                values (?, ?, ?, ?, ?, ?, ?, ?)
+            """.trimIndent(),
+            UUID.fromString(complaint.id),
+            complaint.source,
+            complaint.bookTitle,
+            complaint.chapterTitle,
+            complaint.status,
+            complaint.note,
+            complaint.source,
+            complaint.note,
+        )
+        return complaint
+    }
+
+    private fun mapComplianceConfig(row: Map<String, Any?>): ComplianceConfigResponse = ComplianceConfigResponse(
+        privacyPolicyTitle = row.stringValue("privacy_policy_title").ifBlank { DEFAULT_CONFIG.privacyPolicyTitle },
+        privacyPolicyUrl = row.stringValue("privacy_policy_url").ifBlank { DEFAULT_CONFIG.privacyPolicyUrl },
+        termsTitle = row.stringValue("terms_title").ifBlank { DEFAULT_CONFIG.termsTitle },
+        termsUrl = row.stringValue("terms_url").ifBlank { DEFAULT_CONFIG.termsUrl },
+        adDisclosureEnabled = row.booleanValue("ad_disclosure_enabled"),
+        adDisclosureText = row.stringValue("ad_disclosure").ifBlank { DEFAULT_CONFIG.adDisclosureText },
+    )
+
+    private fun mapComplaint(row: Map<String, Any?>): CopyrightComplaintRow = CopyrightComplaintRow(
+        id = row.stringValue("id"),
+        source = row.stringValue("source"),
+        bookTitle = row.stringValue("book_title"),
+        chapterTitle = row.stringValue("chapter_title"),
+        status = row.stringValue("status"),
+        note = row.stringValue("note"),
+    )
+
+    companion object {
+        private val GLOBAL_COMPLIANCE_CONFIG_ID = UUID.fromString("00000000-0000-0000-0000-000000000201")
+        private val DEFAULT_CONFIG = ComplianceConfigResponse(
+            privacyPolicyTitle = "HappyNovel Privacy Policy",
+            privacyPolicyUrl = "https://example.com/privacy",
+            termsTitle = "HappyNovel Terms of Service",
+            termsUrl = "https://example.com/terms",
+            adDisclosureEnabled = true,
+            adDisclosureText = "This app may show ads to support translated novel reading.",
+        )
+    }
+}
+
 @RestController
 @RequestMapping("/api/admin/compliance")
 class AdminComplianceController(
@@ -144,7 +285,19 @@ class AdminComplianceController(
 }
 
 @Configuration
-class ComplianceConfiguration {
+class ComplianceConfiguration(
+    private val environment: Environment,
+    private val jdbcTemplateProvider: ObjectProvider<JdbcTemplate>,
+) {
     @Bean
-    fun compliancePolicyService(): CompliancePolicyService = InMemoryCompliancePolicyService()
+    fun compliancePolicyService(): CompliancePolicyService =
+        when (environment.getProperty("app.admin.repository-mode", "SEED").uppercase()) {
+            "JDBC" -> JdbcCompliancePolicyService(databaseClient())
+            else -> InMemoryCompliancePolicyService()
+        }
+
+    private fun databaseClient(): ContentDatabaseClient =
+        jdbcTemplateProvider.ifAvailable
+            ?.let(::JdbcTemplateContentDatabaseClient)
+            ?: MissingContentDatabaseClient
 }

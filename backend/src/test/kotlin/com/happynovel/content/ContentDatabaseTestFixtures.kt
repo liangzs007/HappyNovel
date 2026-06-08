@@ -46,4 +46,6 @@ class FakeContentDatabaseClient : ContentDatabaseClient {
             else -> emptyList()
         }
     }
+
+    override fun update(sql: String, vararg args: Any?): Int = 1
 }
