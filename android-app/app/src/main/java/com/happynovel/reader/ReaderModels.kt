@@ -52,6 +52,11 @@ data class BookSummary(
     val id: String,
     val title: String,
     val latestChapterTitle: String,
+    val author: String = "",
+    val coverUrl: String = "",
+    val description: String = "",
+    val status: String = "",
+    val updatedAt: String = "",
 )
 
 data class ReadingProgress(
