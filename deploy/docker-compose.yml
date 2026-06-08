@@ -17,5 +17,34 @@ services:
     ports:
       - "6379:6379"
 
+  backend:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    image: happynovel-backend:local
+    container_name: happynovel-backend
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      SERVER_PORT: 8080
+      DATABASE_URL: jdbc:postgresql://postgres:5432/happynovel
+      DATABASE_USERNAME: happynovel
+      DATABASE_PASSWORD: happynovel
+      CONTENT_REPOSITORY_MODE: JDBC
+      ADMIN_REPOSITORY_MODE: JDBC
+      AUDIT_REPOSITORY_MODE: JDBC
+      GLOSSARY_REPOSITORY_MODE: JDBC
+      PUBLICATION_REPOSITORY_MODE: JDBC
+      READING_REPOSITORY_MODE: JDBC
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5-mini}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-change-me}
+    ports:
+      - "8080:8080"
+
 volumes:
   postgres-data:

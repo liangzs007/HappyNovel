@@ -462,6 +462,19 @@ graph LR
 - `android-app/` 使用 emulator 可访问的后端地址。
 - OpenAI Key 只放在后端环境变量，不进入 App 或前端。
 
+### 12.1 数据源模式
+
+本地演示默认可以使用 `SEED` 模式启动，生产化联调使用 `JDBC` 模式连接 PostgreSQL。部署环境建议统一设置：
+
+- `CONTENT_REPOSITORY_MODE=JDBC`：App 与后台内容列表读取数据库内容。
+- `ADMIN_REPOSITORY_MODE=JDBC`：广告配置、合规配置和版权投诉落库。
+- `AUDIT_REPOSITORY_MODE=JDBC`：后台登录与运营审计日志落库。
+- `GLOSSARY_REPOSITORY_MODE=JDBC`：翻译术语表落库。
+- `PUBLICATION_REPOSITORY_MODE=JDBC`：书籍下架、章节隐藏直接更新数据库发布状态。
+- `READING_REPOSITORY_MODE=JDBC`：App 阅读进度事件写入数据库，用于热门排序和行为分析。
+
+如果某个模式保持 `SEED`，对应模块会使用内存或种子数据，仅适合本地调试，不适合作为可重启的运营环境。
+
 ## 13. 可靠性与失败处理
 
 ### 抓取失败
