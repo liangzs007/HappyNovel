@@ -71,6 +71,28 @@ cd android-app
 ../gradlew :app:assembleDebug
 ```
 
+## MVP 验收脚本
+
+本地可执行基础 smoke 验收：
+
+```bash
+./scripts/e2e_smoke_test.sh
+```
+
+该脚本会依次运行：
+
+- 后端测试：`../gradlew test`
+- 后台 Web API 测试与构建：`npm test -- --run src/adminApi.test.ts`、`npm run build`
+- Android 阅读器单元测试与 Debug 构建：`:app:testDebugUnitTest`、`:app:assembleDebug`
+
+如果已经启动后端服务，可额外开启 API smoke：
+
+```bash
+RUN_API_SMOKE=1 API_BASE_URL=http://localhost:8080 ./scripts/e2e_smoke_test.sh
+```
+
+API smoke 会检查首页、广告配置、合规配置、后台广告配置保存、匿名设备创建和阅读事件上报。
+
 ## 文档
 
 核心文档：

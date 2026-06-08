@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+script="scripts/e2e_smoke_test.sh"
+
+test -x "$script"
+grep -Fq "../gradlew test" "$script"
+grep -Fq "npm test -- --run" "$script"
+grep -Fq ":app:testDebugUnitTest" "$script"
+grep -Fq ":app:assembleDebug" "$script"
+grep -Fq "/api/app/home" "$script"
+grep -Fq "/api/admin/compliance/ad-config" "$script"
+grep -Fq "/api/app/reading-events" "$script"
