@@ -8,9 +8,12 @@ import com.happynovel.content.ChapterContent
 import com.happynovel.content.ChapterSummary
 import com.happynovel.content.ContentRepository
 import com.happynovel.publication.PublicationControlService
+import com.happynovel.reading.ReadingEvent
+import com.happynovel.reading.ReadingEventService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
@@ -55,12 +58,20 @@ data class AppComplianceConfigResponse(
     val adDisclosureText: String,
 )
 
+data class RecordReadingEventRequest(
+    val deviceId: String,
+    val bookId: String,
+    val chapterId: String,
+    val percent: Float,
+)
+
 @RestController
 @RequestMapping("/api/app")
 class AppApiController(
     private val contentRepository: ContentRepository,
     private val compliancePolicyService: CompliancePolicyService,
     private val publicationControlService: PublicationControlService,
+    private val readingEventService: ReadingEventService,
 ) {
     @GetMapping("/home")
     fun home(): HomeResponse {
@@ -122,6 +133,20 @@ class AppApiController(
     fun createAnonymousDevice(): AnonymousDeviceResponse = AnonymousDeviceResponse(
         deviceId = "anon-${UUID.randomUUID()}",
     )
+
+    @PostMapping("/reading-events")
+    fun recordReadingEvent(@RequestBody request: RecordReadingEventRequest): ReadingEvent {
+        requireBookPublished(request.bookId)
+        requireChapterPublished(request.chapterId)
+        return readingEventService.record(
+            ReadingEvent(
+                deviceId = request.deviceId,
+                bookId = request.bookId,
+                chapterId = request.chapterId,
+                percent = request.percent,
+            ),
+        )
+    }
 
     @GetMapping("/ad-config")
     fun adConfig(): AdConfigResponse = AdConfigResponse(

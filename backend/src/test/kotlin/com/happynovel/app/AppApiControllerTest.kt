@@ -4,6 +4,7 @@ import com.happynovel.admin.InMemoryCompliancePolicyService
 import com.happynovel.admin.UpdateComplianceConfigRequest
 import com.happynovel.content.InMemoryContentRepository
 import com.happynovel.publication.InMemoryPublicationControlService
+import com.happynovel.reading.InMemoryReadingEventService
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -13,10 +14,12 @@ import kotlin.test.assertTrue
 class AppApiControllerTest {
     private val compliancePolicyService = InMemoryCompliancePolicyService()
     private val publicationControlService = InMemoryPublicationControlService()
+    private val readingEventService = InMemoryReadingEventService()
     private val controller = AppApiController(
         InMemoryContentRepository.withSeedData(),
         compliancePolicyService,
         publicationControlService,
+        readingEventService,
     )
 
     @Test
@@ -116,5 +119,25 @@ class AppApiControllerTest {
         assertEquals("Updated Terms", compliance.termsTitle)
         assertEquals(false, compliance.adDisclosureEnabled)
         assertEquals("Ads are disabled for this region.", compliance.adDisclosureText)
+    }
+
+    @Test
+    fun `anonymous device can report reading progress`() {
+        val device = controller.createAnonymousDevice()
+
+        val response = controller.recordReadingEvent(
+            RecordReadingEventRequest(
+                deviceId = device.deviceId,
+                bookId = "book-seed-1",
+                chapterId = "chapter-seed-1",
+                percent = 0.42f,
+            ),
+        )
+
+        assertEquals(device.deviceId, response.deviceId)
+        assertEquals("book-seed-1", response.bookId)
+        assertEquals("chapter-seed-1", response.chapterId)
+        assertEquals(0.42f, response.percent)
+        assertEquals(response, readingEventService.events().single())
     }
 }

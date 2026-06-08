@@ -17,6 +17,8 @@ class AppApiContractTest {
             routes.chapterCatalog("book-seed-1"),
         )
         assertEquals("https://api.happynovel.example/api/app/chapters/chapter-seed-1", routes.chapterContent("chapter-seed-1"))
+        assertEquals("https://api.happynovel.example/api/app/devices/anonymous", routes.anonymousDevice())
+        assertEquals("https://api.happynovel.example/api/app/reading-events", routes.readingEvents())
         assertEquals("https://api.happynovel.example/api/app/ad-config", routes.adConfig())
         assertEquals("https://api.happynovel.example/api/app/compliance-config", routes.complianceConfig())
     }

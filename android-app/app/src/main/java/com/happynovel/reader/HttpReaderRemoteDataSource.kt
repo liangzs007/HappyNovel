@@ -7,6 +7,8 @@ import java.net.URL
 
 interface HttpTextClient {
     fun get(url: String): String
+
+    fun post(url: String, body: String): String
 }
 
 class UrlConnectionHttpTextClient : HttpTextClient {
@@ -15,6 +17,17 @@ class UrlConnectionHttpTextClient : HttpTextClient {
         connection.requestMethod = "GET"
         connection.connectTimeout = 10_000
         connection.readTimeout = 10_000
+        return connection.inputStream.bufferedReader().use { it.readText() }
+    }
+
+    override fun post(url: String, body: String): String {
+        val connection = URL(url).openConnection() as HttpURLConnection
+        connection.requestMethod = "POST"
+        connection.connectTimeout = 10_000
+        connection.readTimeout = 10_000
+        connection.doOutput = true
+        connection.setRequestProperty("Content-Type", "application/json")
+        connection.outputStream.bufferedWriter().use { it.write(body) }
         return connection.inputStream.bufferedReader().use { it.readText() }
     }
 }
@@ -45,6 +58,12 @@ class HttpReaderRemoteDataSource(
     override fun adConfig(): AppAdConfigDto = parseAdConfig(client.get(routes.adConfig()))
 
     override fun complianceConfig(): AppComplianceConfigDto = parseComplianceConfig(client.get(routes.complianceConfig()))
+
+    override fun createAnonymousDevice(): AppAnonymousDeviceDto =
+        parseAnonymousDevice(client.post(routes.anonymousDevice(), "{}"))
+
+    override fun recordReadingEvent(request: AppReadingEventRequestDto): AppReadingEventDto =
+        parseReadingEvent(client.post(routes.readingEvents(), request.toJson().toString()))
 
     private fun parseHome(json: String): AppHomeResponseDto {
         val root = JSONObject(json)
@@ -111,6 +130,27 @@ class HttpReaderRemoteDataSource(
             adDisclosureText = root.getString("adDisclosureText"),
         )
     }
+
+    private fun parseAnonymousDevice(json: String): AppAnonymousDeviceDto {
+        val root = JSONObject(json)
+        return AppAnonymousDeviceDto(deviceId = root.getString("deviceId"))
+    }
+
+    private fun parseReadingEvent(json: String): AppReadingEventDto {
+        val root = JSONObject(json)
+        return AppReadingEventDto(
+            deviceId = root.getString("deviceId"),
+            bookId = root.getString("bookId"),
+            chapterId = root.getString("chapterId"),
+            percent = root.getDouble("percent").toFloat(),
+        )
+    }
+
+    private fun AppReadingEventRequestDto.toJson(): JSONObject = JSONObject()
+        .put("deviceId", deviceId)
+        .put("bookId", bookId)
+        .put("chapterId", chapterId)
+        .put("percent", percent.toDouble())
 
     private fun JSONObject.toBookSummaryDto(): AppBookSummaryDto = AppBookSummaryDto(
         id = getString("id"),

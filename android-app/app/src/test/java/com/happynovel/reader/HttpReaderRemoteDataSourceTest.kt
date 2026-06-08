@@ -2,13 +2,14 @@ package com.happynovel.reader
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.json.JSONObject
 import org.junit.Test
 
 class HttpReaderRemoteDataSourceTest {
     @Test
     fun `http remote data source requests backend routes and parses responses`() {
         val client = FakeHttpTextClient(
-            mapOf(
+            getResponses = mapOf(
                 "https://api.example.test/api/app/home" to homeJson,
                 "https://api.example.test/api/app/categories" to categoriesJson,
                 "https://api.example.test/api/app/books?category=fantasy&status=ongoing&sort=popular&limit=12" to bookListJson,
@@ -17,6 +18,10 @@ class HttpReaderRemoteDataSourceTest {
                 "https://api.example.test/api/app/chapters/chapter-seed-1" to chapterJson,
                 "https://api.example.test/api/app/ad-config" to adConfigJson,
                 "https://api.example.test/api/app/compliance-config" to complianceConfigJson,
+            ),
+            postResponses = mapOf(
+                "https://api.example.test/api/app/devices/anonymous" to anonymousDeviceJson,
+                "https://api.example.test/api/app/reading-events" to readingEventJson,
             ),
         )
         val dataSource = HttpReaderRemoteDataSource(
@@ -32,13 +37,36 @@ class HttpReaderRemoteDataSourceTest {
         assertTrue(dataSource.chapterContent("chapter-seed-1").paragraphs.first().contains("Azure Cloud"))
         assertEquals(5, dataSource.adConfig().interstitialEveryChapters)
         assertEquals("HappyNovel Privacy Policy", dataSource.complianceConfig().privacyPolicyTitle)
+        assertEquals("anon-device-1", dataSource.createAnonymousDevice().deviceId)
+        assertEquals(
+            0.42f,
+            dataSource.recordReadingEvent(
+                AppReadingEventRequestDto(
+                    deviceId = "anon-device-1",
+                    bookId = "book-seed-1",
+                    chapterId = "chapter-seed-1",
+                    percent = 0.42f,
+                ),
+            ).percent,
+        )
+        val postedEvent = JSONObject(client.postBodies.getValue("https://api.example.test/api/app/reading-events"))
+        assertEquals("anon-device-1", postedEvent.getString("deviceId"))
+        assertEquals(0.42, postedEvent.getDouble("percent"), 0.0001)
     }
 }
 
 class FakeHttpTextClient(
-    private val responses: Map<String, String>,
+    private val getResponses: Map<String, String>,
+    private val postResponses: Map<String, String> = emptyMap(),
 ) : HttpTextClient {
-    override fun get(url: String): String = responses.getValue(url)
+    val postBodies = mutableMapOf<String, String>()
+
+    override fun get(url: String): String = getResponses.getValue(url)
+
+    override fun post(url: String, body: String): String {
+        postBodies[url] = body
+        return postResponses.getValue(url)
+    }
 }
 
 const val bookJson = """
@@ -128,5 +156,20 @@ const val complianceConfigJson = """
   "termsTitle": "HappyNovel Terms of Service",
   "adDisclosureEnabled": true,
   "adDisclosureText": "This app may show ads to support translated novel reading."
+}
+"""
+
+const val anonymousDeviceJson = """
+{
+  "deviceId": "anon-device-1"
+}
+"""
+
+const val readingEventJson = """
+{
+  "deviceId": "anon-device-1",
+  "bookId": "book-seed-1",
+  "chapterId": "chapter-seed-1",
+  "percent": 0.42
 }
 """

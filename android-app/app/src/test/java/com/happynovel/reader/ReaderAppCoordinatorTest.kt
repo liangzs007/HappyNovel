@@ -126,6 +126,23 @@ class ReaderAppCoordinatorTest {
     }
 
     @Test
+    fun `update reading progress reports anonymous reading event`() {
+        val remoteDataSource = FakeReaderRemoteDataSource()
+        val coordinator = ReaderAppCoordinator(
+            remoteDataSource = remoteDataSource,
+            localRepository = InMemoryReaderLocalRepository(),
+        )
+
+        coordinator.updateReadingProgress("book-seed-1", "chapter-seed-1", 0.4f)
+
+        val event = remoteDataSource.readingEvents.single()
+        assertEquals("seed-device", event.deviceId)
+        assertEquals("book-seed-1", event.bookId)
+        assertEquals("chapter-seed-1", event.chapterId)
+        assertEquals(0.4f, event.percent)
+    }
+
+    @Test
     fun `reader settings actions update font size within bounds`() {
         val localRepository = InMemoryReaderLocalRepository()
         val coordinator = ReaderAppCoordinator(
@@ -157,6 +174,8 @@ class ReaderAppCoordinatorTest {
 }
 
 private class FakeReaderRemoteDataSource : ReaderRemoteDataSource {
+    val readingEvents = mutableListOf<AppReadingEventDto>()
+
     override fun home(): AppHomeResponseDto = AppHomeResponseDto(
         appName = "HappyNovel",
         recommended = listOf(book),
@@ -194,6 +213,17 @@ private class FakeReaderRemoteDataSource : ReaderRemoteDataSource {
         language = "en",
         paragraphs = listOf("The morning bell echoed across Azure Cloud Sect."),
     )
+
+    override fun recordReadingEvent(request: AppReadingEventRequestDto): AppReadingEventDto {
+        val event = AppReadingEventDto(
+            deviceId = request.deviceId,
+            bookId = request.bookId,
+            chapterId = request.chapterId,
+            percent = request.percent,
+        )
+        readingEvents += event
+        return event
+    }
 
     private val book = AppBookSummaryDto(
         id = "book-seed-1",

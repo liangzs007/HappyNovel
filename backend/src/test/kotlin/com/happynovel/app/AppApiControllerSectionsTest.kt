@@ -8,6 +8,7 @@ import com.happynovel.content.ChapterContent
 import com.happynovel.content.ChapterSummary
 import com.happynovel.content.ContentRepository
 import com.happynovel.publication.InMemoryPublicationControlService
+import com.happynovel.reading.InMemoryReadingEventService
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
@@ -16,6 +17,7 @@ class AppApiControllerSectionsTest {
         FakeSectionContentRepository(),
         InMemoryCompliancePolicyService(),
         InMemoryPublicationControlService(),
+        InMemoryReadingEventService(),
     )
 
     @Test

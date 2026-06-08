@@ -30,6 +30,15 @@ interface ReaderRemoteDataSource {
         adDisclosureEnabled = false,
         adDisclosureText = "",
     )
+
+    fun createAnonymousDevice(): AppAnonymousDeviceDto = AppAnonymousDeviceDto(deviceId = "seed-device")
+
+    fun recordReadingEvent(request: AppReadingEventRequestDto): AppReadingEventDto = AppReadingEventDto(
+        deviceId = request.deviceId,
+        bookId = request.bookId,
+        chapterId = request.chapterId,
+        percent = request.percent.coerceIn(0f, 1f),
+    )
 }
 
 data class CategoriesState(
@@ -65,6 +74,8 @@ class ReaderAppCoordinator(
     private val remoteDataSource: ReaderRemoteDataSource,
     private val localRepository: ReaderLocalRepository,
 ) {
+    private var anonymousDeviceId: String? = null
+
     fun loadHome(): HomeState = remoteDataSource.home().toHomeState()
 
     fun loadCategories(): CategoriesState {
@@ -121,11 +132,20 @@ class ReaderAppCoordinator(
     }
 
     fun updateReadingProgress(bookId: String, chapterId: String, percent: Float) {
+        val clampedPercent = percent.coerceIn(0f, 1f)
         localRepository.updateProgress(
             ReadingProgress(
                 bookId = bookId,
                 chapterId = chapterId,
-                percent = percent.coerceIn(0f, 1f),
+                percent = clampedPercent,
+            ),
+        )
+        remoteDataSource.recordReadingEvent(
+            AppReadingEventRequestDto(
+                deviceId = anonymousDeviceId(),
+                bookId = bookId,
+                chapterId = chapterId,
+                percent = clampedPercent,
             ),
         )
     }
@@ -160,6 +180,14 @@ class ReaderAppCoordinator(
 
     private fun updateSettings(transform: (ReaderSettings) -> ReaderSettings) {
         localRepository.updateSettings(transform(localRepository.settings()))
+    }
+
+    private fun anonymousDeviceId(): String {
+        val current = anonymousDeviceId
+        if (current != null) {
+            return current
+        }
+        return remoteDataSource.createAnonymousDevice().deviceId.also { anonymousDeviceId = it }
     }
 
     private companion object {

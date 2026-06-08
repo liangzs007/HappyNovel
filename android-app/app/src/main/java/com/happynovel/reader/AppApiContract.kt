@@ -28,6 +28,10 @@ class HappyNovelApiRoutes(baseUrl: String) {
 
     fun chapterContent(chapterId: String): String = "$normalizedBaseUrl/api/app/chapters/$chapterId"
 
+    fun anonymousDevice(): String = "$normalizedBaseUrl/api/app/devices/anonymous"
+
+    fun readingEvents(): String = "$normalizedBaseUrl/api/app/reading-events"
+
     fun adConfig(): String = "$normalizedBaseUrl/api/app/ad-config"
 
     fun complianceConfig(): String = "$normalizedBaseUrl/api/app/compliance-config"
@@ -143,6 +147,24 @@ data class AppComplianceConfigDto(
     val termsTitle: String,
     val adDisclosureEnabled: Boolean,
     val adDisclosureText: String,
+)
+
+data class AppAnonymousDeviceDto(
+    val deviceId: String,
+)
+
+data class AppReadingEventRequestDto(
+    val deviceId: String,
+    val bookId: String,
+    val chapterId: String,
+    val percent: Float,
+)
+
+data class AppReadingEventDto(
+    val deviceId: String,
+    val bookId: String,
+    val chapterId: String,
+    val percent: Float,
 )
 
 fun AppHomeResponseDto.toHomeState(): HomeState = HomeState(
