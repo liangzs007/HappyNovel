@@ -7,6 +7,7 @@ import com.happynovel.content.Category
 import com.happynovel.content.ChapterContent
 import com.happynovel.content.ChapterSummary
 import com.happynovel.content.ContentRepository
+import com.happynovel.publication.PublicationControlService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -59,15 +60,16 @@ data class AppComplianceConfigResponse(
 class AppApiController(
     private val contentRepository: ContentRepository,
     private val compliancePolicyService: CompliancePolicyService,
+    private val publicationControlService: PublicationControlService,
 ) {
     @GetMapping("/home")
     fun home(): HomeResponse {
         return HomeResponse(
             appName = "HappyNovel",
-            recommended = contentRepository.recommendedBooks(),
-            latestUpdates = contentRepository.latestBooks(),
-            popular = contentRepository.popularBooks(),
-            newBooks = contentRepository.newBooks(),
+            recommended = contentRepository.recommendedBooks().onlyPublishedBooks(),
+            latestUpdates = contentRepository.latestBooks().onlyPublishedBooks(),
+            popular = contentRepository.popularBooks().onlyPublishedBooks(),
+            newBooks = contentRepository.newBooks().onlyPublishedBooks(),
         )
     }
 
@@ -89,20 +91,32 @@ class AppApiController(
             status = status,
             sort = sort,
             limit = limit.coerceIn(1, 50),
-        ),
+        ).onlyPublishedBooks(),
     )
 
     @GetMapping("/books/{bookId}")
-    fun bookDetail(@PathVariable bookId: String): BookDetail = contentRepository.bookDetail(bookId)
+    fun bookDetail(@PathVariable bookId: String): BookDetail {
+        requireBookPublished(bookId)
+        val visibleChapters = visibleChapters(bookId)
+        return contentRepository.bookDetail(bookId).copy(
+            chapterCount = visibleChapters.size,
+            latestChapter = visibleChapters.maxByOrNull { it.order },
+        )
+    }
 
     @GetMapping("/books/{bookId}/chapters")
     fun chapterCatalog(@PathVariable bookId: String): ChapterCatalogResponse = ChapterCatalogResponse(
         bookId = bookId,
-        chapters = contentRepository.chapterCatalog(bookId),
+        chapters = visibleChapters(bookId),
     )
 
     @GetMapping("/chapters/{chapterId}")
-    fun chapterContent(@PathVariable chapterId: String): ChapterContent = contentRepository.chapterContent(chapterId)
+    fun chapterContent(@PathVariable chapterId: String): ChapterContent {
+        requireChapterPublished(chapterId)
+        val chapter = contentRepository.chapterContent(chapterId)
+        requireBookPublished(chapter.bookId)
+        return chapter
+    }
 
     @PostMapping("/devices/anonymous")
     fun createAnonymousDevice(): AnonymousDeviceResponse = AnonymousDeviceResponse(
@@ -125,5 +139,26 @@ class AppApiController(
             adDisclosureEnabled = config.adDisclosureEnabled,
             adDisclosureText = config.adDisclosureText,
         )
+    }
+
+    private fun List<BookSummary>.onlyPublishedBooks(): List<BookSummary> =
+        filter { publicationControlService.isBookPublished(it.id) }
+
+    private fun visibleChapters(bookId: String): List<ChapterSummary> {
+        requireBookPublished(bookId)
+        return contentRepository.chapterCatalog(bookId)
+            .filter { publicationControlService.isChapterPublished(it.id) }
+    }
+
+    private fun requireBookPublished(bookId: String) {
+        if (!publicationControlService.isBookPublished(bookId)) {
+            throw NoSuchElementException("Book is unpublished: $bookId")
+        }
+    }
+
+    private fun requireChapterPublished(chapterId: String) {
+        if (!publicationControlService.isChapterPublished(chapterId)) {
+            throw NoSuchElementException("Chapter is hidden: $chapterId")
+        }
     }
 }

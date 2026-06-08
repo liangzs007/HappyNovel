@@ -3,14 +3,21 @@ package com.happynovel.app
 import com.happynovel.admin.InMemoryCompliancePolicyService
 import com.happynovel.admin.UpdateComplianceConfigRequest
 import com.happynovel.content.InMemoryContentRepository
+import com.happynovel.publication.InMemoryPublicationControlService
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class AppApiControllerTest {
     private val compliancePolicyService = InMemoryCompliancePolicyService()
-    private val controller = AppApiController(InMemoryContentRepository.withSeedData(), compliancePolicyService)
+    private val publicationControlService = InMemoryPublicationControlService()
+    private val controller = AppApiController(
+        InMemoryContentRepository.withSeedData(),
+        compliancePolicyService,
+        publicationControlService,
+    )
 
     @Test
     fun `home endpoint returns published sections`() {
@@ -55,6 +62,26 @@ class AppApiControllerTest {
         assertEquals("chapter-seed-1", response.id)
         assertEquals("en", response.language)
         assertTrue(response.paragraphs.first().contains("Azure Cloud"))
+    }
+
+    @Test
+    fun `unpublished book is hidden from app home and detail`() {
+        publicationControlService.unpublishBook("book-seed-1")
+
+        val home = controller.home()
+
+        assertEquals(emptyList(), home.recommended)
+        assertFailsWith<NoSuchElementException> { controller.bookDetail("book-seed-1") }
+    }
+
+    @Test
+    fun `hidden chapter is omitted from app catalog and content`() {
+        publicationControlService.hideChapter("chapter-seed-1")
+
+        val catalog = controller.chapterCatalog("book-seed-1")
+
+        assertEquals(listOf("chapter-seed-2"), catalog.chapters.map { it.id })
+        assertFailsWith<NoSuchElementException> { controller.chapterContent("chapter-seed-1") }
     }
 
     @Test

@@ -2,7 +2,10 @@ package com.happynovel.admin
 
 import com.happynovel.content.ChapterSummary
 import com.happynovel.content.ContentRepository
+import com.happynovel.publication.PublicationControlService
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -23,10 +26,16 @@ data class AdminChaptersResponse(
     val emptyText: String,
 )
 
+data class ChapterPublicationResponse(
+    val chapterId: String,
+    val publishStatus: String,
+)
+
 @RestController
 @RequestMapping("/api/admin/chapters")
 class AdminChaptersController(
     private val contentRepository: ContentRepository,
+    private val publicationControlService: PublicationControlService,
 ) {
     @GetMapping
     fun chapters(
@@ -35,6 +44,12 @@ class AdminChaptersController(
         chapters = contentRepository.chapterCatalog(bookId).map(::toAdminChapterRow),
         emptyText = "暂无章节，请先触发书籍抓取。",
     )
+
+    @PostMapping("/{chapterId}/hide")
+    fun hideChapter(@PathVariable chapterId: String): ChapterPublicationResponse {
+        publicationControlService.hideChapter(chapterId)
+        return ChapterPublicationResponse(chapterId = chapterId, publishStatus = "已隐藏")
+    }
 }
 
 private fun toAdminChapterRow(chapter: ChapterSummary): AdminChapterRow = AdminChapterRow(

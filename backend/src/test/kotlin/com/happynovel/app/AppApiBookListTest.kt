@@ -7,6 +7,7 @@ import com.happynovel.content.Category
 import com.happynovel.content.ChapterContent
 import com.happynovel.content.ChapterSummary
 import com.happynovel.content.ContentRepository
+import com.happynovel.publication.InMemoryPublicationControlService
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
@@ -14,7 +15,11 @@ class AppApiBookListTest {
     @Test
     fun `book list endpoint passes category status sort and limit to repository`() {
         val repository = RecordingBrowseContentRepository()
-        val controller = AppApiController(repository, InMemoryCompliancePolicyService())
+        val controller = AppApiController(
+            repository,
+            InMemoryCompliancePolicyService(),
+            InMemoryPublicationControlService(),
+        )
 
         val response = controller.books(
             category = "fantasy",

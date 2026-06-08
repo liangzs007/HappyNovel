@@ -42,6 +42,27 @@ describe('admin api client', () => {
     ])
   })
 
+  it('unpublishes book through backend API', async () => {
+    const api = createAdminApi({
+      baseUrl: 'http://localhost:8080',
+      fetcher: async (url, init) => {
+        expect(url).toBe('http://localhost:8080/api/admin/books/book-seed-1/unpublish')
+        expect(init?.method).toBe('POST')
+        return new Response(JSON.stringify({
+          bookId: 'book-seed-1',
+          publishStatus: '已下架',
+        }))
+      },
+    })
+
+    const response = await api.unpublishBook('book-seed-1')
+
+    expect(response).toEqual({
+      bookId: 'book-seed-1',
+      publishStatus: '已下架',
+    })
+  })
+
   it('loads crawling sites from backend response', async () => {
     const api = createAdminApi({
       baseUrl: 'http://localhost:8080',
@@ -308,6 +329,27 @@ describe('admin api client', () => {
         publishStatus: '已发布',
       },
     ])
+  })
+
+  it('hides chapter through backend API', async () => {
+    const api = createAdminApi({
+      baseUrl: 'http://localhost:8080',
+      fetcher: async (url, init) => {
+        expect(url).toBe('http://localhost:8080/api/admin/chapters/chapter-seed-1/hide')
+        expect(init?.method).toBe('POST')
+        return new Response(JSON.stringify({
+          chapterId: 'chapter-seed-1',
+          publishStatus: '已隐藏',
+        }))
+      },
+    })
+
+    const response = await api.hideChapter('chapter-seed-1')
+
+    expect(response).toEqual({
+      chapterId: 'chapter-seed-1',
+      publishStatus: '已隐藏',
+    })
   })
 
   it('loads admin glossary rows from backend response', async () => {

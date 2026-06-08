@@ -7,11 +7,16 @@ import com.happynovel.content.Category
 import com.happynovel.content.ChapterContent
 import com.happynovel.content.ChapterSummary
 import com.happynovel.content.ContentRepository
+import com.happynovel.publication.InMemoryPublicationControlService
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
 class AppApiControllerSectionsTest {
-    private val controller = AppApiController(FakeSectionContentRepository(), InMemoryCompliancePolicyService())
+    private val controller = AppApiController(
+        FakeSectionContentRepository(),
+        InMemoryCompliancePolicyService(),
+        InMemoryPublicationControlService(),
+    )
 
     @Test
     fun `home endpoint uses distinct repository sections`() {

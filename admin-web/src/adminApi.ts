@@ -16,6 +16,11 @@ export interface AdminBooksResult {
   emptyText: string
 }
 
+export interface BookPublicationResult {
+  bookId: string
+  publishStatus: string
+}
+
 export interface AdminSiteRow {
   id: string
   name: string
@@ -49,6 +54,11 @@ export interface AdminChapterRow {
 export interface AdminChaptersResult {
   chapters: AdminChapterRow[]
   emptyText: string
+}
+
+export interface ChapterPublicationResult {
+  chapterId: string
+  publishStatus: string
 }
 
 export interface AdminGlossaryTermRow {
@@ -229,6 +239,16 @@ export function createAdminApi(options: AdminApiOptions = {}) {
       }
     },
 
+    async unpublishBook(bookId: string): Promise<BookPublicationResult> {
+      const response = await fetcher(`${baseUrl}/api/admin/books/${bookId}/unpublish`, {
+        method: 'POST',
+      })
+      if (!response.ok) {
+        throw new Error(`书籍下架失败：${response.status}`)
+      }
+      return await response.json() as BookPublicationResult
+    },
+
     async listSites(): Promise<AdminSiteRow[]> {
       const response = await fetcher(`${baseUrl}/api/admin/crawling/sites`)
       if (!response.ok) {
@@ -305,6 +325,16 @@ export function createAdminApi(options: AdminApiOptions = {}) {
         emptyText: payload.emptyText,
         chapters: payload.chapters.map(toChapterRow),
       }
+    },
+
+    async hideChapter(chapterId: string): Promise<ChapterPublicationResult> {
+      const response = await fetcher(`${baseUrl}/api/admin/chapters/${chapterId}/hide`, {
+        method: 'POST',
+      })
+      if (!response.ok) {
+        throw new Error(`章节隐藏失败：${response.status}`)
+      }
+      return await response.json() as ChapterPublicationResult
     },
 
     async listGlossaryTerms(): Promise<AdminGlossaryResult> {

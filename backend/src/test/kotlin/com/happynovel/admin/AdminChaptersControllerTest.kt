@@ -6,13 +6,14 @@ import com.happynovel.content.Category
 import com.happynovel.content.ChapterContent
 import com.happynovel.content.ChapterSummary
 import com.happynovel.content.ContentRepository
+import com.happynovel.publication.InMemoryPublicationControlService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 class AdminChaptersControllerTest {
     @Test
     fun `admin chapters endpoint returns chapter rows for selected book`() {
-        val controller = AdminChaptersController(AdminChaptersContentRepository())
+        val controller = AdminChaptersController(AdminChaptersContentRepository(), InMemoryPublicationControlService())
 
         val response = controller.chapters(bookId = "book-seed-1")
 
@@ -25,6 +26,18 @@ class AdminChaptersControllerTest {
         assertEquals("已清洗", response.chapters.single().cleanStatus)
         assertEquals("已翻译", response.chapters.single().translationStatus)
         assertEquals("已发布", response.chapters.single().publishStatus)
+    }
+
+    @Test
+    fun `admin can hide chapter`() {
+        val publicationControlService = InMemoryPublicationControlService()
+        val controller = AdminChaptersController(AdminChaptersContentRepository(), publicationControlService)
+
+        val response = controller.hideChapter("chapter-seed-1")
+
+        assertEquals("chapter-seed-1", response.chapterId)
+        assertEquals("已隐藏", response.publishStatus)
+        assertEquals(false, publicationControlService.isChapterPublished("chapter-seed-1"))
     }
 }
 

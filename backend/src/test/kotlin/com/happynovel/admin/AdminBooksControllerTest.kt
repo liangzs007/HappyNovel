@@ -6,13 +6,14 @@ import com.happynovel.content.Category
 import com.happynovel.content.ChapterContent
 import com.happynovel.content.ChapterSummary
 import com.happynovel.content.ContentRepository
+import com.happynovel.publication.InMemoryPublicationControlService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 class AdminBooksControllerTest {
     @Test
     fun `admin books endpoint returns table rows from content repository`() {
-        val controller = AdminBooksController(AdminBooksContentRepository())
+        val controller = AdminBooksController(AdminBooksContentRepository(), InMemoryPublicationControlService())
 
         val response = controller.books(limit = 20)
 
@@ -22,6 +23,18 @@ class AdminBooksControllerTest {
         assertEquals("Dragon Gate", response.books.single().title)
         assertEquals("ongoing", response.books.single().status)
         assertEquals("Chapter 2: The Trial", response.books.single().latestChapterTitle)
+    }
+
+    @Test
+    fun `admin can unpublish book`() {
+        val publicationControlService = InMemoryPublicationControlService()
+        val controller = AdminBooksController(AdminBooksContentRepository(), publicationControlService)
+
+        val response = controller.unpublishBook("book-admin-1")
+
+        assertEquals("book-admin-1", response.bookId)
+        assertEquals("已下架", response.publishStatus)
+        assertEquals(false, publicationControlService.isBookPublished("book-admin-1"))
     }
 }
 
