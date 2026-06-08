@@ -131,6 +131,14 @@ export interface CreateComplaintRequest {
   note: string
 }
 
+export interface CreateGlossaryTermRequest {
+  bookId: string
+  sourceTerm: string
+  translatedTerm: string
+  type: string
+  description: string
+}
+
 export interface AdminComplaintRow {
   id: string
   source: string
@@ -365,6 +373,22 @@ export function createAdminApi(options: AdminApiOptions = {}) {
       const response = await fetcher(`${baseUrl}/api/admin/glossary`)
       if (!response.ok) {
         throw new Error(`术语列表加载失败：${response.status}`)
+      }
+      const payload = await response.json() as BackendAdminGlossaryResponse
+      return {
+        emptyText: payload.emptyText,
+        terms: payload.terms.map(toGlossaryTermRow),
+      }
+    },
+
+    async createGlossaryTerm(request: CreateGlossaryTermRequest): Promise<AdminGlossaryResult> {
+      const response = await fetcher(`${baseUrl}/api/admin/glossary`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(request),
+      })
+      if (!response.ok) {
+        throw new Error(`术语创建失败：${response.status}`)
       }
       const payload = await response.json() as BackendAdminGlossaryResponse
       return {

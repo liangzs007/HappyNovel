@@ -2,7 +2,10 @@ package com.happynovel.admin
 
 import com.happynovel.translation.GlossaryService
 import com.happynovel.translation.GlossaryTerm
+import com.happynovel.translation.AddGlossaryTermRequest
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -34,6 +37,15 @@ class AdminGlossaryController(
         terms = glossaryService.terms(bookId).map(::toAdminGlossaryTermRow),
         emptyText = "暂无术语，请为书籍添加术语表。",
     )
+
+    @PostMapping
+    fun createTerm(@RequestBody request: AddGlossaryTermRequest): AdminGlossaryResponse {
+        glossaryService.addTerm(request)
+        return AdminGlossaryResponse(
+            terms = glossaryService.terms(request.bookId).map(::toAdminGlossaryTermRow),
+            emptyText = "暂无术语，请为书籍添加术语表。",
+        )
+    }
 }
 
 private fun toAdminGlossaryTermRow(term: GlossaryTerm): AdminGlossaryTermRow = AdminGlossaryTermRow(

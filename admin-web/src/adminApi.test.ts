@@ -295,6 +295,54 @@ describe('admin api client', () => {
     expect(compliance.configCards).toContain('插屏频率：每 8 章')
   })
 
+  it('creates glossary term through backend API', async () => {
+    const api = createAdminApi({
+      baseUrl: 'http://localhost:8080',
+      fetcher: async (url, init) => {
+        expect(url).toBe('http://localhost:8080/api/admin/glossary')
+        expect(init?.method).toBe('POST')
+        expect(JSON.parse(String(init?.body))).toEqual({
+          bookId: 'book-seed-1',
+          sourceTerm: '林辰',
+          translatedTerm: 'Lin Chen',
+          type: 'PERSON',
+          description: '主角姓名',
+        })
+        return new Response(JSON.stringify({
+          emptyText: '暂无术语，请为书籍添加术语表。',
+          terms: [
+            {
+              id: 'term-1',
+              sourceTerm: '林辰',
+              translatedTerm: 'Lin Chen',
+              type: 'PERSON',
+              enabledStatus: '启用',
+            },
+          ],
+        }))
+      },
+    })
+
+    const response = await api.createGlossaryTerm({
+      bookId: 'book-seed-1',
+      sourceTerm: '林辰',
+      translatedTerm: 'Lin Chen',
+      type: 'PERSON',
+      description: '主角姓名',
+    })
+
+    expect(response.terms).toEqual([
+      {
+        id: 'term-1',
+        sourceTerm: '林辰',
+        translatedTerm: 'Lin Chen',
+        type: 'PERSON',
+        enabledStatus: '启用',
+        updatedAt: '-',
+      },
+    ])
+  })
+
   it('creates copyright complaint through backend API', async () => {
     const api = createAdminApi({
       baseUrl: 'http://localhost:8080',

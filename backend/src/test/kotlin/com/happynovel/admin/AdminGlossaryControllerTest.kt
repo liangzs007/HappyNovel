@@ -30,4 +30,25 @@ class AdminGlossaryControllerTest {
         assertEquals("ORGANIZATION", response.terms.single().type)
         assertEquals("启用", response.terms.single().enabledStatus)
     }
+
+    @Test
+    fun `admin glossary endpoint creates term rows`() {
+        val glossary = InMemoryGlossaryService()
+        val controller = AdminGlossaryController(glossary)
+
+        val response = controller.createTerm(
+            AddGlossaryTermRequest(
+                bookId = "book-seed-1",
+                sourceTerm = "林辰",
+                translatedTerm = "Lin Chen",
+                type = GlossaryTermType.PERSON,
+                description = "主角姓名",
+            ),
+        )
+
+        assertEquals(1, response.terms.size)
+        assertEquals("林辰", response.terms.single().sourceTerm)
+        assertEquals("Lin Chen", response.terms.single().translatedTerm)
+        assertEquals("PERSON", response.terms.single().type)
+    }
 }
