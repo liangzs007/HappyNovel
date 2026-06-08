@@ -21,6 +21,13 @@ export interface BookPublicationResult {
   publishStatus: string
 }
 
+export interface CreateBookSourceRequest {
+  siteConfigId: string
+  bookTitle: string
+  sourceUrl: string
+  updateIntervalMinutes: number
+}
+
 export interface AdminSiteRow {
   id: string
   name: string
@@ -167,6 +174,14 @@ interface BackendBookSummary {
   updatedAt?: string
 }
 
+interface BackendBookSource {
+  id: string
+  siteConfigId: string
+  bookTitle: string
+  sourceUrl: string
+  updateIntervalMinutes: number
+}
+
 interface BackendAdminBooksResponse {
   books: BackendBookSummary[]
   emptyText: string
@@ -276,6 +291,19 @@ export function createAdminApi(options: AdminApiOptions = {}) {
         throw new Error(`书籍下架失败：${response.status}`)
       }
       return await response.json() as BookPublicationResult
+    },
+
+    async createBookSource(request: CreateBookSourceRequest): Promise<AdminBookRow> {
+      const response = await fetcher(`${baseUrl}/api/admin/crawling/book-sources`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(request),
+      })
+      if (!response.ok) {
+        throw new Error(`书籍来源创建失败：${response.status}`)
+      }
+      const payload = await response.json() as BackendBookSource
+      return toBookSourceRow(payload)
     },
 
     async listSites(): Promise<AdminSiteRow[]> {
@@ -450,6 +478,21 @@ function toBookRow(book: BackendBookSummary): AdminBookRow {
     recommendationWeight: '0',
     latestChapterTitle: book.latestChapterTitle ?? '-',
     updatedAt: book.updatedAt ?? '-',
+  }
+}
+
+function toBookSourceRow(source: BackendBookSource): AdminBookRow {
+  return {
+    id: source.id,
+    title: source.bookTitle,
+    author: '-',
+    sourceSite: source.siteConfigId,
+    categories: '-',
+    status: '待抓取',
+    publishStatus: '未发布',
+    recommendationWeight: '0',
+    latestChapterTitle: '-',
+    updatedAt: `每 ${source.updateIntervalMinutes} 分钟检查`,
   }
 }
 

@@ -15,6 +15,7 @@ import {
   type AdminRecommendationsResult,
   type AdminSiteRow,
   type AdminTaskRow,
+  type CreateBookSourceRequest,
   type CreateSiteRequest,
   type CreateGlossaryTermRequest,
 } from './adminApi'
@@ -75,12 +76,14 @@ function ManagementPage({
   pageKey,
   tableState,
   complianceConfigCards,
+  bookSourceCreateForm,
   siteCreateForm,
   glossaryCreateForm,
 }: {
   pageKey: AdminPageKey
   tableState: RemoteTableState
   complianceConfigCards: string[]
+  bookSourceCreateForm?: React.ReactNode
   siteCreateForm?: React.ReactNode
   glossaryCreateForm?: React.ReactNode
 }) {
@@ -101,6 +104,7 @@ function ManagementPage({
           {complianceConfigCards.map((card) => <span key={card}>{card}</span>)}
         </div>
       ) : null}
+      {pageKey === 'books' ? bookSourceCreateForm : null}
       {pageKey === 'sites' ? siteCreateForm : null}
       {pageKey === 'glossary' ? glossaryCreateForm : null}
       <div className="filters">
@@ -147,6 +151,60 @@ function ManagementPage({
         </table>
       </div>
     </section>
+  )
+}
+
+function BookSourceQuickCreateForm({
+  isSubmitting,
+  onSubmit,
+}: {
+  isSubmitting: boolean
+  onSubmit: (request: CreateBookSourceRequest) => void
+}) {
+  const [form, setForm] = useState({
+    siteConfigId: '',
+    bookTitle: '',
+    sourceUrl: '',
+    updateIntervalMinutes: '360',
+  })
+
+  return (
+    <form
+      className="quick-form quick-form-books"
+      onSubmit={(event) => {
+        event.preventDefault()
+        onSubmit({
+          siteConfigId: form.siteConfigId,
+          bookTitle: form.bookTitle,
+          sourceUrl: form.sourceUrl,
+          updateIntervalMinutes: Number(form.updateIntervalMinutes) || 360,
+        })
+      }}
+    >
+      <label>
+        站点 ID
+        <input value={form.siteConfigId} onChange={(event) => setForm({ ...form, siteConfigId: event.target.value })} />
+      </label>
+      <label>
+        书名
+        <input value={form.bookTitle} onChange={(event) => setForm({ ...form, bookTitle: event.target.value })} />
+      </label>
+      <label>
+        来源 URL
+        <input value={form.sourceUrl} onChange={(event) => setForm({ ...form, sourceUrl: event.target.value })} />
+      </label>
+      <label>
+        更新间隔
+        <input
+          inputMode="numeric"
+          value={form.updateIntervalMinutes}
+          onChange={(event) => setForm({ ...form, updateIntervalMinutes: event.target.value })}
+        />
+      </label>
+      <button type="submit" disabled={isSubmitting || !form.siteConfigId || !form.bookTitle || !form.sourceUrl}>
+        {isSubmitting ? '保存中' : '保存来源'}
+      </button>
+    </form>
   )
 }
 
@@ -330,6 +388,7 @@ function App() {
   const [activePage, setActivePage] = useState<AdminPageKey>('dashboard')
   const [booksResult, setBooksResult] = useState<AdminBooksResult | null>(null)
   const [isBooksLoading, setBooksLoading] = useState(false)
+  const [isBookSourceSubmitting, setBookSourceSubmitting] = useState(false)
   const [booksError, setBooksError] = useState<string | null>(null)
   const [chaptersResult, setChaptersResult] = useState<AdminChaptersResult | null>(null)
   const [isChaptersLoading, setChaptersLoading] = useState(false)
@@ -519,6 +578,22 @@ function App() {
           pageKey={activePage}
           tableState={tableState}
           complianceConfigCards={compliance?.configCards ?? []}
+          bookSourceCreateForm={(
+            <BookSourceQuickCreateForm
+              isSubmitting={isBookSourceSubmitting}
+              onSubmit={(request) => {
+                setBookSourceSubmitting(true)
+                setBooksError(null)
+                adminApi.createBookSource(request)
+                  .then((book) => setBooksResult((current) => ({
+                    emptyText: current?.emptyText ?? adminPages.books.emptyText,
+                    books: [...(current?.books ?? []), book],
+                  })))
+                  .catch(() => setBooksError('书籍来源保存失败，请检查站点 ID 和来源 URL。'))
+                  .finally(() => setBookSourceSubmitting(false))
+              }}
+            />
+          )}
           siteCreateForm={(
             <SiteQuickCreateForm
               isSubmitting={isSiteSubmitting}

@@ -63,6 +63,49 @@ describe('admin api client', () => {
     })
   })
 
+  it('creates book source through backend API', async () => {
+    const api = createAdminApi({
+      baseUrl: 'http://localhost:8080',
+      fetcher: async (url, init) => {
+        expect(url).toBe('http://localhost:8080/api/admin/crawling/book-sources')
+        expect(init?.method).toBe('POST')
+        expect(JSON.parse(String(init?.body))).toEqual({
+          siteConfigId: 'site-1',
+          bookTitle: '测试小说',
+          sourceUrl: 'https://novels.example.com/book/1',
+          updateIntervalMinutes: 360,
+        })
+        return new Response(JSON.stringify({
+          id: 'source-1',
+          siteConfigId: 'site-1',
+          bookTitle: '测试小说',
+          sourceUrl: 'https://novels.example.com/book/1',
+          updateIntervalMinutes: 360,
+        }))
+      },
+    })
+
+    const row = await api.createBookSource({
+      siteConfigId: 'site-1',
+      bookTitle: '测试小说',
+      sourceUrl: 'https://novels.example.com/book/1',
+      updateIntervalMinutes: 360,
+    })
+
+    expect(row).toEqual({
+      id: 'source-1',
+      title: '测试小说',
+      author: '-',
+      sourceSite: 'site-1',
+      categories: '-',
+      status: '待抓取',
+      publishStatus: '未发布',
+      recommendationWeight: '0',
+      latestChapterTitle: '-',
+      updatedAt: '每 360 分钟检查',
+    })
+  })
+
   it('loads crawling sites from backend response', async () => {
     const api = createAdminApi({
       baseUrl: 'http://localhost:8080',
