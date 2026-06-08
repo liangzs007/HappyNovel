@@ -231,6 +231,10 @@ button.secondary {
   grid-template-columns: minmax(140px, 1fr) minmax(160px, 1fr) minmax(260px, 1.6fr) minmax(100px, 0.6fr) auto;
 }
 
+.quick-form-tasks {
+  grid-template-columns: minmax(180px, 1fr) minmax(360px, 2fr) auto;
+}
+
 .quick-form label {
   display: grid;
   gap: 6px;

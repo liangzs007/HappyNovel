@@ -78,6 +78,7 @@ function ManagementPage({
   complianceConfigCards,
   bookSourceCreateForm,
   siteCreateForm,
+  taskRetryForm,
   glossaryCreateForm,
 }: {
   pageKey: AdminPageKey
@@ -85,6 +86,7 @@ function ManagementPage({
   complianceConfigCards: string[]
   bookSourceCreateForm?: React.ReactNode
   siteCreateForm?: React.ReactNode
+  taskRetryForm?: React.ReactNode
   glossaryCreateForm?: React.ReactNode
 }) {
   const page = adminPages[pageKey]
@@ -106,6 +108,7 @@ function ManagementPage({
       ) : null}
       {pageKey === 'books' ? bookSourceCreateForm : null}
       {pageKey === 'sites' ? siteCreateForm : null}
+      {pageKey === 'tasks' ? taskRetryForm : null}
       {pageKey === 'glossary' ? glossaryCreateForm : null}
       <div className="filters">
         <input placeholder="关键词搜索" />
@@ -151,6 +154,39 @@ function ManagementPage({
         </table>
       </div>
     </section>
+  )
+}
+
+function TaskRetryForm({
+  isSubmitting,
+  onSubmit,
+}: {
+  isSubmitting: boolean
+  onSubmit: (taskId: string, html: string) => void
+}) {
+  const [taskId, setTaskId] = useState('')
+  const [html, setHtml] = useState('<div class="chapter-list"></div>')
+
+  return (
+    <form
+      className="quick-form quick-form-tasks"
+      onSubmit={(event) => {
+        event.preventDefault()
+        onSubmit(taskId, html)
+      }}
+    >
+      <label>
+        任务 ID
+        <input value={taskId} onChange={(event) => setTaskId(event.target.value)} />
+      </label>
+      <label>
+        重试 HTML
+        <input value={html} onChange={(event) => setHtml(event.target.value)} />
+      </label>
+      <button type="submit" disabled={isSubmitting || !taskId || !html}>
+        {isSubmitting ? '重试中' : '重试任务'}
+      </button>
+    </form>
   )
 }
 
@@ -409,6 +445,7 @@ function App() {
   const [sitesError, setSitesError] = useState<string | null>(null)
   const [tasks, setTasks] = useState<AdminTaskRow[] | null>(null)
   const [isTasksLoading, setTasksLoading] = useState(false)
+  const [isTaskRetrying, setTaskRetrying] = useState(false)
   const [tasksError, setTasksError] = useState<string | null>(null)
   const [compliance, setCompliance] = useState<AdminComplianceResult | null>(null)
   const [isComplianceLoading, setComplianceLoading] = useState(false)
@@ -604,6 +641,19 @@ function App() {
                   .then((site) => setSites((current) => [...(current ?? []), site]))
                   .catch(() => setSitesError('站点保存失败，请检查域名和解析规则。'))
                   .finally(() => setSiteSubmitting(false))
+              }}
+            />
+          )}
+          taskRetryForm={(
+            <TaskRetryForm
+              isSubmitting={isTaskRetrying}
+              onSubmit={(taskId, html) => {
+                setTaskRetrying(true)
+                setTasksError(null)
+                adminApi.retryTask(taskId, html)
+                  .then((task) => setTasks((current) => [...(current ?? []), task]))
+                  .catch(() => setTasksError('任务重试失败，请检查任务 ID 和 HTML 内容。'))
+                  .finally(() => setTaskRetrying(false))
               }}
             />
           )}
