@@ -111,6 +111,47 @@ class TranslationPipelineTest {
     }
 
     @Test
+    fun `translation task creates pending glossary candidates from source text`() {
+        val glossary = InMemoryGlossaryService()
+        glossary.addTerm(
+            AddGlossaryTermRequest(
+                bookId = "book-1",
+                sourceTerm = "青云宗",
+                translatedTerm = "Azure Cloud Sect",
+                type = GlossaryTermType.ORGANIZATION,
+                description = "宗门",
+            )
+        )
+        val service = TranslationPipelineService(
+            glossaryService = glossary,
+            provider = FakeTranslationProvider(
+                translatedParagraphs = listOf("Lin Chen returned to Azure Cloud Sect."),
+                inputTokens = 120,
+                outputTokens = 40,
+            ),
+            chunker = ChapterChunker(maxCharacters = 500),
+            promptBuilder = TranslationPromptBuilder(),
+        )
+
+        service.translateChapter(
+            TranslateChapterRequest(
+                bookId = "book-1",
+                chapterId = "chapter-1",
+                title = "第一章 青云宗",
+                sourceLanguage = "zh",
+                targetLanguage = "en",
+                paragraphs = listOf("林辰拜入青云宗。林辰在青云宗遇见苏瑶。苏瑶提醒林辰。"),
+            )
+        )
+
+        val pendingTerms = glossary.pendingTerms("book-1")
+
+        assertEquals(listOf("林辰", "苏瑶"), pendingTerms.map { it.sourceTerm })
+        assertEquals(listOf(3, 2), pendingTerms.map { it.occurrenceCount })
+        assertTrue(pendingTerms.all { it.chapterId == "chapter-1" })
+    }
+
+    @Test
     fun `openai provider builds responses api request payload`() {
         val provider = OpenAITranslationProvider(
             apiKey = "test-key",

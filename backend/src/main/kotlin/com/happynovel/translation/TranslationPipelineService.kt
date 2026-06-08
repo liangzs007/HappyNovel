@@ -54,6 +54,8 @@ class TranslationPipelineService(
         var inputTokens = 0
         var outputTokens = 0
 
+        createPendingGlossaryCandidates(request, glossary)
+
         chunks.forEach { chunk ->
             val prompt = promptBuilder.build(
                 title = request.title,
@@ -91,7 +93,61 @@ class TranslationPipelineService(
             publicationStatus = PublicationStatus.PUBLISHED,
         )
     }
+
+    private fun createPendingGlossaryCandidates(
+        request: TranslateChapterRequest,
+        glossary: List<GlossaryTerm>,
+    ) {
+        val confirmedTerms = glossary.map { it.sourceTerm }.toSet()
+        val existingPendingTerms = glossaryService.pendingTerms(request.bookId).map { it.sourceTerm }.toSet()
+        val ignoredTerms = confirmedTerms + existingPendingTerms
+
+        extractRepeatedChineseTerms(request.paragraphs)
+            .filterNot { candidate ->
+                ignoredTerms.any {
+                    candidate.sourceTerm == it || candidate.sourceTerm in it || it in candidate.sourceTerm
+                }
+            }
+            .forEach { candidate ->
+                glossaryService.createPendingTerm(
+                    CreatePendingGlossaryTermRequest(
+                        bookId = request.bookId,
+                        chapterId = request.chapterId,
+                        sourceTerm = candidate.sourceTerm,
+                        suggestedTranslation = null,
+                        occurrenceCount = candidate.occurrenceCount,
+                    )
+                )
+            }
+    }
+
+    private fun extractRepeatedChineseTerms(paragraphs: List<String>): List<PendingGlossaryCandidate> {
+        val text = paragraphs.joinToString("\n")
+        val counts = linkedMapOf<String, Int>()
+        Regex("[\\u4e00-\\u9fff]+")
+            .findAll(text)
+            .map { it.value }
+            .forEach { segment ->
+                for (length in 2..4) {
+                    if (segment.length < length) continue
+                    for (index in 0..(segment.length - length)) {
+                        val candidate = segment.substring(index, index + length)
+                        counts[candidate] = (counts[candidate] ?: 0) + 1
+                    }
+                }
+            }
+
+        return counts
+            .filterValues { it > 1 }
+            .map { PendingGlossaryCandidate(sourceTerm = it.key, occurrenceCount = it.value) }
+            .sortedWith(compareByDescending<PendingGlossaryCandidate> { it.occurrenceCount }.thenBy { it.sourceTerm.length })
+    }
 }
+
+private data class PendingGlossaryCandidate(
+    val sourceTerm: String,
+    val occurrenceCount: Int,
+)
 
 class FakeTranslationProvider(
     private val translatedParagraphs: List<String>,
