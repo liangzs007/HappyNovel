@@ -3,6 +3,8 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 API_BASE_URL="${API_BASE_URL:-http://localhost:8080}"
+SMOKE_BOOK_ID="${SMOKE_BOOK_ID:-00000000-0000-0000-0000-000000000101}"
+SMOKE_CHAPTER_ID="${SMOKE_CHAPTER_ID:-00000000-0000-0000-0000-000000000201}"
 
 log() {
   printf '\n[%s] %s\n' "$(date +%H:%M:%S)" "$*"
@@ -43,7 +45,7 @@ if [ "${RUN_API_SMOKE:-0}" = "1" ]; then
   device_id="$(curl -fsS -X POST "$API_BASE_URL/api/app/devices/anonymous" | sed -E 's/.*"deviceId":"([^"]+)".*/\1/')"
   curl -fsS -X POST "$API_BASE_URL/api/app/reading-events" \
     -H "Content-Type: application/json" \
-    -d "{\"deviceId\":\"$device_id\",\"bookId\":\"book-seed-1\",\"chapterId\":\"chapter-seed-1\",\"percent\":0.5}" >/dev/null
+    -d "{\"deviceId\":\"$device_id\",\"bookId\":\"$SMOKE_BOOK_ID\",\"chapterId\":\"$SMOKE_CHAPTER_ID\",\"percent\":0.5}" >/dev/null
 fi
 
 log "MVP smoke 验收完成"
