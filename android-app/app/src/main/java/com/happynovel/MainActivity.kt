@@ -6,11 +6,13 @@ import android.view.Gravity
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
-import com.happynovel.reader.InMemoryReaderLocalRepository
+import com.happynovel.reader.FileReaderStateStore
+import com.happynovel.reader.PersistedReaderLocalRepository
 import com.happynovel.reader.ReaderAppCoordinator
 import com.happynovel.reader.ReaderLaunchTextModelFactory
 import com.happynovel.reader.ReaderRemoteDataSourceFactory
 import com.happynovel.reader.ReaderScreenLoader
+import java.io.File
 
 class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -20,8 +22,11 @@ class MainActivity : Activity() {
 
     private fun buildContent(): ScrollView {
         val remoteDataSource = ReaderRemoteDataSourceFactory.create(BuildConfig.HAPPYNOVEL_API_BASE_URL)
+        val localRepository = PersistedReaderLocalRepository(
+            FileReaderStateStore(File(filesDir, "reader-state.json")),
+        )
         val loader = ReaderScreenLoader(
-            ReaderAppCoordinator(remoteDataSource, InMemoryReaderLocalRepository()),
+            ReaderAppCoordinator(remoteDataSource, localRepository),
         )
         val textModel = ReaderLaunchTextModelFactory.create(loader)
 
