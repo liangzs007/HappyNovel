@@ -2,6 +2,9 @@ package com.happynovel.content
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.beans.factory.ObjectProvider
+import org.springframework.core.env.Environment
+import org.springframework.jdbc.core.JdbcTemplate
 
 class InMemoryContentRepository private constructor(
     private val categories: List<Category>,
@@ -84,7 +87,21 @@ class InMemoryContentRepository private constructor(
 }
 
 @Configuration
-class ContentConfiguration {
+class ContentConfiguration(
+    private val environment: Environment,
+    private val jdbcTemplateProvider: ObjectProvider<JdbcTemplate>,
+) {
     @Bean
-    fun contentRepository(): ContentRepository = InMemoryContentRepository.withSeedData()
+    fun contentRepository(): ContentRepository {
+        val mode = environment.getProperty("app.content.repository-mode", "SEED")
+            .uppercase()
+            .let(ContentRepositoryMode::valueOf)
+        val databaseClient = jdbcTemplateProvider.ifAvailable
+            ?.let(::JdbcTemplateContentDatabaseClient)
+            ?: MissingContentDatabaseClient
+        return ContentRepositoryFactory.create(
+            mode = mode,
+            databaseClient = databaseClient,
+        )
+    }
 }
