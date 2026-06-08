@@ -30,6 +30,7 @@ import java.io.File
 
 class MainActivity : Activity() {
     private lateinit var loader: ReaderScreenLoader
+    private lateinit var coordinator: ReaderAppCoordinator
     private val navigationState = ReaderNavigationState()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,9 +39,8 @@ class MainActivity : Activity() {
         val localRepository = PersistedReaderLocalRepository(
             FileReaderStateStore(File(filesDir, "reader-state.json")),
         )
-        loader = ReaderScreenLoader(
-            ReaderAppCoordinator(remoteDataSource, localRepository),
-        )
+        coordinator = ReaderAppCoordinator(remoteDataSource, localRepository)
+        loader = ReaderScreenLoader(coordinator)
         render()
     }
 
@@ -120,7 +120,15 @@ class MainActivity : Activity() {
                     addView(body(detail.description))
                     addView(body("${detail.status} · ${detail.chapterCountLabel}"))
                     addView(actionButton(detail.primaryAction) {
-                        navigationState.openReader(bookId, "chapter-seed-1")
+                        val chapterId = detail.latestChapterId
+                        if (chapterId != null) {
+                            coordinator.startReading(bookId, chapterId)
+                            navigationState.openReader(bookId, chapterId)
+                            render()
+                        }
+                    })
+                    addView(actionButton(detail.bookshelfAction) {
+                        coordinator.saveBookToBookshelf(bookId)
                         render()
                     })
                     addView(actionButton("Chapters") {

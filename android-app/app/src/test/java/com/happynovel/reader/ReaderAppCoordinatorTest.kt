@@ -80,6 +80,20 @@ class ReaderAppCoordinatorTest {
     }
 
     @Test
+    fun `save book to bookshelf does not create reading progress`() {
+        val localRepository = InMemoryReaderLocalRepository()
+        val coordinator = ReaderAppCoordinator(
+            remoteDataSource = FakeReaderRemoteDataSource(),
+            localRepository = localRepository,
+        )
+
+        coordinator.saveBookToBookshelf("book-seed-1")
+
+        assertTrue(localRepository.bookshelf().isSaved("book-seed-1"))
+        assertEquals(null, localRepository.bookshelf().progressFor("book-seed-1"))
+    }
+
+    @Test
     fun `reader state exposes cached chapter settings and progress`() {
         val localRepository = InMemoryReaderLocalRepository()
         val coordinator = ReaderAppCoordinator(

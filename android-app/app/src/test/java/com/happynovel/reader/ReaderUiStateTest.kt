@@ -71,6 +71,7 @@ class ReaderUiStateTest {
         assertEquals("Continue Reading", uiState.primaryAction)
         assertEquals("In Bookshelf", uiState.bookshelfAction)
         assertEquals("1 chapters", uiState.chapterCountLabel)
+        assertEquals("chapter-seed-1", uiState.latestChapterId)
     }
 
     @Test

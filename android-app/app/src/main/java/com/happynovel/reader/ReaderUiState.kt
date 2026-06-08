@@ -41,6 +41,7 @@ data class BookDetailUiState(
     val primaryAction: String,
     val bookshelfAction: String,
     val chapterCountLabel: String,
+    val latestChapterId: String?,
 )
 
 data class ChapterCatalogUiState(
@@ -102,6 +103,7 @@ object ReaderUiStateFactory {
         primaryAction = if (bookDetailState.progress == null) "Start Reading" else "Continue Reading",
         bookshelfAction = if (bookDetailState.isInBookshelf) "In Bookshelf" else "Add to Bookshelf",
         chapterCountLabel = "${bookDetailState.book.chapterCount} chapters",
+        latestChapterId = bookDetailState.book.latestChapter?.id,
     )
 
     fun chapterCatalog(chapterCatalogState: ChapterCatalogState): ChapterCatalogUiState = ChapterCatalogUiState(

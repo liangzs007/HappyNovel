@@ -91,21 +91,16 @@ class ReaderAppCoordinator(
         val detail = remoteDataSource.bookDetail(bookId).toBookDetailState()
         val chapter = remoteDataSource.chapterContent(chapterId).toReaderChapter()
 
-        localRepository.saveBook(
-            BookSummary(
-                id = detail.id,
-                title = detail.title,
-                author = detail.author,
-                coverUrl = detail.coverUrl,
-                description = detail.description,
-                status = detail.status,
-                latestChapterTitle = detail.latestChapter?.title.orEmpty(),
-            ),
-        )
+        localRepository.saveBook(detail.toBookSummary())
         localRepository.updateProgress(ReadingProgress(bookId, chapterId, percent = 0f))
         localRepository.cacheChapter(chapter)
 
         return chapter
+    }
+
+    fun saveBookToBookshelf(bookId: String) {
+        val detail = remoteDataSource.bookDetail(bookId).toBookDetailState()
+        localRepository.saveBook(detail.toBookSummary())
     }
 
     fun readerState(bookId: String, chapterId: String): ReaderScreenState = ReaderScreenState(
@@ -114,3 +109,13 @@ class ReaderAppCoordinator(
         progress = localRepository.bookshelf().progressFor(bookId),
     )
 }
+
+private fun BookDetailState.toBookSummary(): BookSummary = BookSummary(
+    id = id,
+    title = title,
+    author = author,
+    coverUrl = coverUrl,
+    description = description,
+    status = status,
+    latestChapterTitle = latestChapter?.title.orEmpty(),
+)
