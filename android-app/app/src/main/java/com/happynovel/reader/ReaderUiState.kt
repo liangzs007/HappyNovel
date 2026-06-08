@@ -19,6 +19,36 @@ data class BookshelfUiState(
     val emptyMessage: String,
 )
 
+data class CategoriesUiState(
+    val title: String,
+    val filterLabels: List<String>,
+    val categories: List<CategorySummary>,
+    val statuses: List<String>,
+)
+
+data class BookDetailUiState(
+    val title: String,
+    val author: String,
+    val description: String,
+    val status: String,
+    val categories: List<CategorySummary>,
+    val primaryAction: String,
+    val bookshelfAction: String,
+    val chapterCountLabel: String,
+)
+
+data class ChapterCatalogUiState(
+    val title: String,
+    val chapters: List<ChapterRowUiState>,
+)
+
+data class ChapterRowUiState(
+    val id: String,
+    val order: Int,
+    val title: String,
+    val isCurrent: Boolean,
+)
+
 data class ReaderUiState(
     val title: String,
     val paragraphs: List<String>,
@@ -42,6 +72,36 @@ object ReaderUiStateFactory {
         title = "Bookshelf",
         books = bookshelfState.savedBooks,
         emptyMessage = "No saved books yet.",
+    )
+
+    fun categories(categoriesState: CategoriesState): CategoriesUiState = CategoriesUiState(
+        title = "Categories",
+        filterLabels = listOf("Genre", "Status", "Sort"),
+        categories = categoriesState.categories,
+        statuses = categoriesState.statuses,
+    )
+
+    fun bookDetail(bookDetailState: BookDetailReaderState): BookDetailUiState = BookDetailUiState(
+        title = bookDetailState.book.title,
+        author = bookDetailState.book.author,
+        description = bookDetailState.book.description,
+        status = bookDetailState.book.status,
+        categories = bookDetailState.book.categories,
+        primaryAction = if (bookDetailState.progress == null) "Start Reading" else "Continue Reading",
+        bookshelfAction = if (bookDetailState.isInBookshelf) "In Bookshelf" else "Add to Bookshelf",
+        chapterCountLabel = "${bookDetailState.book.chapterCount} chapters",
+    )
+
+    fun chapterCatalog(chapterCatalogState: ChapterCatalogState): ChapterCatalogUiState = ChapterCatalogUiState(
+        title = "Chapters",
+        chapters = chapterCatalogState.chapters.map {
+            ChapterRowUiState(
+                id = it.id,
+                order = it.order,
+                title = it.title,
+                isCurrent = it.id == chapterCatalogState.currentChapterId,
+            )
+        },
     )
 
     fun reader(readerState: ReaderScreenState): ReaderUiState = ReaderUiState(

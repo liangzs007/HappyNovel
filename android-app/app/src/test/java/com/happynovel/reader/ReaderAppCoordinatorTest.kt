@@ -19,6 +19,51 @@ class ReaderAppCoordinatorTest {
     }
 
     @Test
+    fun `load categories maps category filters and statuses`() {
+        val coordinator = ReaderAppCoordinator(
+            remoteDataSource = FakeReaderRemoteDataSource(),
+            localRepository = InMemoryReaderLocalRepository(),
+        )
+
+        val state = coordinator.loadCategories()
+
+        assertEquals("Fantasy", state.categories.single().name)
+        assertEquals(listOf("ongoing", "completed"), state.statuses)
+    }
+
+    @Test
+    fun `load book detail includes local bookshelf status`() {
+        val localRepository = InMemoryReaderLocalRepository()
+        localRepository.saveBook(BookSummary("book-seed-1", "Dragon Gate", "Chapter 1"))
+        val coordinator = ReaderAppCoordinator(
+            remoteDataSource = FakeReaderRemoteDataSource(),
+            localRepository = localRepository,
+        )
+
+        val state = coordinator.loadBookDetail("book-seed-1")
+
+        assertEquals("Dragon Gate", state.book.title)
+        assertTrue(state.isInBookshelf)
+        assertEquals("Chapter 1: Azure Cloud Sect", state.book.latestChapter?.title)
+    }
+
+    @Test
+    fun `load chapter catalog marks current progress chapter`() {
+        val localRepository = InMemoryReaderLocalRepository()
+        localRepository.updateProgress(ReadingProgress("book-seed-1", "chapter-seed-1", 0.3f))
+        val coordinator = ReaderAppCoordinator(
+            remoteDataSource = FakeReaderRemoteDataSource(),
+            localRepository = localRepository,
+        )
+
+        val state = coordinator.loadChapterCatalog("book-seed-1")
+
+        assertEquals("book-seed-1", state.bookId)
+        assertEquals("chapter-seed-1", state.currentChapterId)
+        assertEquals("Chapter 1: Azure Cloud Sect", state.chapters.single().title)
+    }
+
+    @Test
     fun `start reading saves book progress and caches chapter`() {
         val localRepository = InMemoryReaderLocalRepository()
         val coordinator = ReaderAppCoordinator(
@@ -61,6 +106,11 @@ private class FakeReaderRemoteDataSource : ReaderRemoteDataSource {
         newBooks = listOf(book),
     )
 
+    override fun categories(): AppCategoriesResponseDto = AppCategoriesResponseDto(
+        categories = listOf(AppCategoryDto("category-fantasy", "Fantasy", "fantasy")),
+        statuses = listOf("ongoing", "completed"),
+    )
+
     override fun bookDetail(bookId: String): AppBookDetailDto = AppBookDetailDto(
         id = book.id,
         title = book.title,
@@ -71,6 +121,11 @@ private class FakeReaderRemoteDataSource : ReaderRemoteDataSource {
         categories = listOf(AppCategoryDto("category-fantasy", "Fantasy", "fantasy")),
         chapterCount = 1,
         latestChapter = AppChapterSummaryDto("chapter-seed-1", 1, "Chapter 1: Azure Cloud Sect", "2026-06-08T00:00:00Z"),
+    )
+
+    override fun chapterCatalog(bookId: String): AppChapterCatalogResponseDto = AppChapterCatalogResponseDto(
+        bookId = bookId,
+        chapters = listOf(AppChapterSummaryDto("chapter-seed-1", 1, "Chapter 1: Azure Cloud Sect", "2026-06-08T00:00:00Z")),
     )
 
     override fun chapterContent(chapterId: String): AppChapterContentDto = AppChapterContentDto(

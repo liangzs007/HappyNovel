@@ -3,10 +3,31 @@ package com.happynovel.reader
 interface ReaderRemoteDataSource {
     fun home(): AppHomeResponseDto
 
+    fun categories(): AppCategoriesResponseDto
+
     fun bookDetail(bookId: String): AppBookDetailDto
+
+    fun chapterCatalog(bookId: String): AppChapterCatalogResponseDto
 
     fun chapterContent(chapterId: String): AppChapterContentDto
 }
+
+data class CategoriesState(
+    val categories: List<CategorySummary>,
+    val statuses: List<String>,
+)
+
+data class BookDetailReaderState(
+    val book: BookDetailState,
+    val isInBookshelf: Boolean,
+    val progress: ReadingProgress?,
+)
+
+data class ChapterCatalogState(
+    val bookId: String,
+    val chapters: List<ChapterSummary>,
+    val currentChapterId: String?,
+)
 
 data class ReaderScreenState(
     val chapter: ChapterContent?,
@@ -19,6 +40,32 @@ class ReaderAppCoordinator(
     private val localRepository: ReaderLocalRepository,
 ) {
     fun loadHome(): HomeState = remoteDataSource.home().toHomeState()
+
+    fun loadCategories(): CategoriesState {
+        val response = remoteDataSource.categories()
+        return CategoriesState(
+            categories = response.categories.map { it.toCategorySummary() },
+            statuses = response.statuses,
+        )
+    }
+
+    fun loadBookDetail(bookId: String): BookDetailReaderState {
+        val detail = remoteDataSource.bookDetail(bookId).toBookDetailState()
+        return BookDetailReaderState(
+            book = detail,
+            isInBookshelf = localRepository.bookshelf().isSaved(bookId),
+            progress = localRepository.bookshelf().progressFor(bookId),
+        )
+    }
+
+    fun loadChapterCatalog(bookId: String): ChapterCatalogState {
+        val response = remoteDataSource.chapterCatalog(bookId)
+        return ChapterCatalogState(
+            bookId = response.bookId,
+            chapters = response.chapters.map { it.toChapterSummary() },
+            currentChapterId = localRepository.bookshelf().progressFor(bookId)?.chapterId,
+        )
+    }
 
     fun startReading(bookId: String, chapterId: String): ChapterContent {
         val detail = remoteDataSource.bookDetail(bookId).toBookDetailState()
