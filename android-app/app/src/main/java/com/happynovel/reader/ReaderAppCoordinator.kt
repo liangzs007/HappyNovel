@@ -105,6 +105,16 @@ class ReaderAppCoordinator(
         localRepository.saveBook(detail.toBookSummary())
     }
 
+    fun updateReadingProgress(bookId: String, chapterId: String, percent: Float) {
+        localRepository.updateProgress(
+            ReadingProgress(
+                bookId = bookId,
+                chapterId = chapterId,
+                percent = percent.coerceIn(0f, 1f),
+            ),
+        )
+    }
+
     fun readerState(bookId: String, chapterId: String): ReaderScreenState = ReaderScreenState(
         chapter = localRepository.cachedChapter(chapterId),
         settings = localRepository.settings(),

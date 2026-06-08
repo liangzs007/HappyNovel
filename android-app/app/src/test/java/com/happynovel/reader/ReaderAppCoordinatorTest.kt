@@ -109,6 +109,21 @@ class ReaderAppCoordinatorTest {
         assertEquals(21, state.settings.fontSizeSp)
         assertEquals("chapter-seed-1", state.progress?.chapterId)
     }
+
+    @Test
+    fun `update reading progress clamps and persists percent`() {
+        val localRepository = InMemoryReaderLocalRepository()
+        val coordinator = ReaderAppCoordinator(
+            remoteDataSource = FakeReaderRemoteDataSource(),
+            localRepository = localRepository,
+        )
+        coordinator.startReading("book-seed-1", "chapter-seed-1")
+
+        coordinator.updateReadingProgress("book-seed-1", "chapter-seed-1", 1.4f)
+
+        val state = coordinator.readerState("book-seed-1", "chapter-seed-1")
+        assertEquals(1f, state.progress?.percent)
+    }
 }
 
 private class FakeReaderRemoteDataSource : ReaderRemoteDataSource {

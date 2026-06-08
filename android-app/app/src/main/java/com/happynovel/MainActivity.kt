@@ -173,6 +173,10 @@ class MainActivity : Activity() {
                     reader.paragraphs.forEach { paragraph ->
                         addView(body(paragraph))
                     }
+                    addView(actionButton("Mark Chapter Read") {
+                        coordinator.updateReadingProgress(bookId, chapterId, 1f)
+                        render()
+                    })
                 })
             },
         )
