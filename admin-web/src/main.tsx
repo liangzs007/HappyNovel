@@ -15,9 +15,12 @@ import {
   type AdminRecommendationsResult,
   type AdminSiteRow,
   type AdminTaskRow,
+  type CreateComplaintRequest,
   type CreateBookSourceRequest,
   type CreateSiteRequest,
   type CreateGlossaryTermRequest,
+  type UpdateAdConfigRequest,
+  type UpdateComplianceConfigRequest,
 } from './adminApi'
 import {
   adminNavigation,
@@ -80,6 +83,7 @@ function ManagementPage({
   siteCreateForm,
   taskRetryForm,
   glossaryCreateForm,
+  complianceForms,
 }: {
   pageKey: AdminPageKey
   tableState: RemoteTableState
@@ -88,6 +92,7 @@ function ManagementPage({
   siteCreateForm?: React.ReactNode
   taskRetryForm?: React.ReactNode
   glossaryCreateForm?: React.ReactNode
+  complianceForms?: React.ReactNode
 }) {
   const page = adminPages[pageKey]
 
@@ -110,6 +115,7 @@ function ManagementPage({
       {pageKey === 'sites' ? siteCreateForm : null}
       {pageKey === 'tasks' ? taskRetryForm : null}
       {pageKey === 'glossary' ? glossaryCreateForm : null}
+      {pageKey === 'compliance' ? complianceForms : null}
       <div className="filters">
         <input placeholder="关键词搜索" />
         <select aria-label="状态筛选">
@@ -154,6 +160,152 @@ function ManagementPage({
         </table>
       </div>
     </section>
+  )
+}
+
+function ComplianceQuickForms({
+  isSubmitting,
+  onUpdateCompliance,
+  onUpdateAds,
+  onCreateComplaint,
+}: {
+  isSubmitting: boolean
+  onUpdateCompliance: (request: UpdateComplianceConfigRequest) => void
+  onUpdateAds: (request: UpdateAdConfigRequest) => void
+  onCreateComplaint: (request: CreateComplaintRequest) => void
+}) {
+  const [policy, setPolicy] = useState<UpdateComplianceConfigRequest>({
+    privacyPolicyTitle: 'HappyNovel Privacy Policy',
+    privacyPolicyUrl: 'https://example.com/privacy',
+    termsTitle: 'HappyNovel Terms of Service',
+    termsUrl: 'https://example.com/terms',
+    adDisclosureEnabled: true,
+    adDisclosureText: 'This app may show ads to support translated novel reading.',
+  })
+  const [ads, setAds] = useState<UpdateAdConfigRequest>({
+    enabled: true,
+    readerBannerEnabled: true,
+    interstitialEveryChapters: 5,
+  })
+  const [complaint, setComplaint] = useState<CreateComplaintRequest>({
+    source: '',
+    bookTitle: '',
+    chapterTitle: '',
+    note: '',
+  })
+
+  return (
+    <div className="compliance-forms">
+      <form
+        className="quick-form quick-form-compliance"
+        onSubmit={(event) => {
+          event.preventDefault()
+          onUpdateCompliance(policy)
+        }}
+      >
+        <label>
+          隐私标题
+          <input
+            value={policy.privacyPolicyTitle}
+            onChange={(event) => setPolicy({ ...policy, privacyPolicyTitle: event.target.value })}
+          />
+        </label>
+        <label>
+          隐私 URL
+          <input
+            value={policy.privacyPolicyUrl}
+            onChange={(event) => setPolicy({ ...policy, privacyPolicyUrl: event.target.value })}
+          />
+        </label>
+        <label>
+          条款标题
+          <input value={policy.termsTitle} onChange={(event) => setPolicy({ ...policy, termsTitle: event.target.value })} />
+        </label>
+        <label>
+          条款 URL
+          <input value={policy.termsUrl} onChange={(event) => setPolicy({ ...policy, termsUrl: event.target.value })} />
+        </label>
+        <label>
+          广告披露
+          <select
+            value={policy.adDisclosureEnabled ? 'true' : 'false'}
+            onChange={(event) => setPolicy({ ...policy, adDisclosureEnabled: event.target.value === 'true' })}
+          >
+            <option value="true">启用</option>
+            <option value="false">停用</option>
+          </select>
+        </label>
+        <label>
+          披露文案
+          <input
+            value={policy.adDisclosureText}
+            onChange={(event) => setPolicy({ ...policy, adDisclosureText: event.target.value })}
+          />
+        </label>
+        <button type="submit" disabled={isSubmitting}>保存合规</button>
+      </form>
+      <form
+        className="quick-form quick-form-ad-config"
+        onSubmit={(event) => {
+          event.preventDefault()
+          onUpdateAds(ads)
+        }}
+      >
+        <label>
+          广告
+          <select value={ads.enabled ? 'true' : 'false'} onChange={(event) => setAds({ ...ads, enabled: event.target.value === 'true' })}>
+            <option value="true">启用</option>
+            <option value="false">停用</option>
+          </select>
+        </label>
+        <label>
+          横幅
+          <select
+            value={ads.readerBannerEnabled ? 'true' : 'false'}
+            onChange={(event) => setAds({ ...ads, readerBannerEnabled: event.target.value === 'true' })}
+          >
+            <option value="true">启用</option>
+            <option value="false">停用</option>
+          </select>
+        </label>
+        <label>
+          插屏频率
+          <input
+            inputMode="numeric"
+            value={ads.interstitialEveryChapters}
+            onChange={(event) => setAds({ ...ads, interstitialEveryChapters: Number(event.target.value) || 0 })}
+          />
+        </label>
+        <button type="submit" disabled={isSubmitting}>保存广告</button>
+      </form>
+      <form
+        className="quick-form quick-form-complaint"
+        onSubmit={(event) => {
+          event.preventDefault()
+          onCreateComplaint(complaint)
+        }}
+      >
+        <label>
+          来源
+          <input value={complaint.source} onChange={(event) => setComplaint({ ...complaint, source: event.target.value })} />
+        </label>
+        <label>
+          书籍
+          <input value={complaint.bookTitle} onChange={(event) => setComplaint({ ...complaint, bookTitle: event.target.value })} />
+        </label>
+        <label>
+          章节
+          <input value={complaint.chapterTitle} onChange={(event) => setComplaint({ ...complaint, chapterTitle: event.target.value })} />
+        </label>
+        <label>
+          备注
+          <input value={complaint.note} onChange={(event) => setComplaint({ ...complaint, note: event.target.value })} />
+        </label>
+        <button type="submit" disabled={isSubmitting || !complaint.source || !complaint.bookTitle}>
+          新增投诉
+        </button>
+      </form>
+    </div>
   )
 }
 
@@ -449,6 +601,7 @@ function App() {
   const [tasksError, setTasksError] = useState<string | null>(null)
   const [compliance, setCompliance] = useState<AdminComplianceResult | null>(null)
   const [isComplianceLoading, setComplianceLoading] = useState(false)
+  const [isComplianceSubmitting, setComplianceSubmitting] = useState(false)
   const [complianceError, setComplianceError] = useState<string | null>(null)
   const page = adminPages[activePage]
 
@@ -667,6 +820,35 @@ function App() {
                   .then(setGlossaryResult)
                   .catch(() => setGlossaryError('术语保存失败，请检查书籍 ID 和后端服务。'))
                   .finally(() => setGlossarySubmitting(false))
+              }}
+            />
+          )}
+          complianceForms={(
+            <ComplianceQuickForms
+              isSubmitting={isComplianceSubmitting}
+              onUpdateCompliance={(request) => {
+                setComplianceSubmitting(true)
+                setComplianceError(null)
+                adminApi.updateCompliance(request)
+                  .then(setCompliance)
+                  .catch(() => setComplianceError('合规配置保存失败，请检查输入内容。'))
+                  .finally(() => setComplianceSubmitting(false))
+              }}
+              onUpdateAds={(request) => {
+                setComplianceSubmitting(true)
+                setComplianceError(null)
+                adminApi.updateAdConfig(request)
+                  .then(setCompliance)
+                  .catch(() => setComplianceError('广告配置保存失败，请检查输入内容。'))
+                  .finally(() => setComplianceSubmitting(false))
+              }}
+              onCreateComplaint={(request) => {
+                setComplianceSubmitting(true)
+                setComplianceError(null)
+                adminApi.createComplaint(request)
+                  .then(setCompliance)
+                  .catch(() => setComplianceError('版权投诉创建失败，请检查输入内容。'))
+                  .finally(() => setComplianceSubmitting(false))
               }}
             />
           )}

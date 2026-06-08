@@ -235,6 +235,27 @@ button.secondary {
   grid-template-columns: minmax(180px, 1fr) minmax(360px, 2fr) auto;
 }
 
+.compliance-forms {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.quick-form-compliance {
+  grid-template-columns: minmax(130px, 1fr) minmax(180px, 1.3fr) minmax(130px, 1fr) minmax(180px, 1.3fr) minmax(110px, 0.7fr) minmax(220px, 1.4fr) auto;
+  margin-bottom: 0;
+}
+
+.quick-form-ad-config {
+  grid-template-columns: minmax(110px, 0.7fr) minmax(110px, 0.7fr) minmax(120px, 0.8fr) auto;
+  margin-bottom: 0;
+}
+
+.quick-form-complaint {
+  grid-template-columns: minmax(120px, 0.8fr) minmax(160px, 1fr) minmax(160px, 1fr) minmax(240px, 1.4fr) auto;
+  margin-bottom: 0;
+}
+
 .quick-form label {
   display: grid;
   gap: 6px;
