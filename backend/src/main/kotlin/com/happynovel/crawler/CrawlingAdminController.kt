@@ -27,6 +27,10 @@ class CrawlingAdminController(
     @GetMapping("/tasks")
     fun tasks(): List<PipelineTask> = service.tasks()
 
+    @PostMapping("/tasks/schedule-latest")
+    fun scheduleLatestCrawls(@RequestBody request: ScheduleLatestCrawlsRequest): List<PipelineTask> =
+        service.scheduleLatestCrawls(request.nowEpochMinutes)
+
     @PostMapping("/book-sources/{bookSourceId}/crawl")
     fun triggerBookCrawl(
         @PathVariable bookSourceId: String,

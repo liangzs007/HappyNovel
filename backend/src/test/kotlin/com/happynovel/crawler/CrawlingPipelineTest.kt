@@ -71,6 +71,21 @@ class CrawlingPipelineTest {
     }
 
     @Test
+    fun `scheduled latest crawl creates tasks for due book sources`() {
+        val service = CrawlingPipelineService()
+        val site = service.createSiteConfig(defaultSiteRequest())
+        val dueSource = service.createBookSource(defaultBookSource(site.id))
+        val futureSource = service.createBookSource(defaultBookSource(site.id, updateIntervalMinutes = 360))
+
+        service.markBookSourceChecked(futureSource.id, checkedAtEpochMinutes = 1_000)
+        val tasks = service.scheduleLatestCrawls(nowEpochMinutes = 1_120)
+
+        assertEquals(listOf(dueSource.id), tasks.map { it.targetId })
+        assertEquals(PipelineTaskType.CRAWL_LATEST, tasks.single().type)
+        assertEquals(PipelineTaskStatus.CREATED, tasks.single().status)
+    }
+
+    @Test
     fun `parser extracts chapter links and body content`() {
         val parser = NovelHtmlParser()
 
@@ -124,11 +139,11 @@ class CrawlingPipelineTest {
         adBlocklist = listOf("请收藏本站", "最新网址"),
     )
 
-    private fun defaultBookSource(siteId: String): CreateBookSourceRequest = CreateBookSourceRequest(
+    private fun defaultBookSource(siteId: String, updateIntervalMinutes: Int = 360): CreateBookSourceRequest = CreateBookSourceRequest(
         siteConfigId = siteId,
         bookTitle = "测试小说",
         sourceUrl = "https://novels.example.com/book/1",
-        updateIntervalMinutes = 360,
+        updateIntervalMinutes = updateIntervalMinutes,
     )
 
     private fun sampleBookHtml(): String = """

@@ -35,6 +35,20 @@ class CrawlingAdminControllerTest {
         assertEquals(1, retried.retryCount)
     }
 
+    @Test
+    fun `admin can schedule due latest crawl tasks`() {
+        val service = CrawlingPipelineService()
+        val controller = CrawlingAdminController(service)
+
+        val site = controller.createSite(defaultSiteRequest())
+        val source = controller.createBookSource(defaultBookSource(site.id))
+        val tasks = controller.scheduleLatestCrawls(ScheduleLatestCrawlsRequest(nowEpochMinutes = 1_000))
+
+        assertEquals(source.id, tasks.single().targetId)
+        assertEquals(PipelineTaskType.CRAWL_LATEST, tasks.single().type)
+        assertEquals(PipelineTaskStatus.CREATED, tasks.single().status)
+    }
+
     private fun defaultSiteRequest(): CreateSiteConfigRequest = CreateSiteConfigRequest(
         name = "示例站点",
         baseDomain = "https://novels.example.com",

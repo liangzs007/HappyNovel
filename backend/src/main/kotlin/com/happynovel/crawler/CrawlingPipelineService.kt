@@ -32,6 +32,7 @@ class CrawlingPipelineService(
 
     fun createBookSource(request: CreateBookSourceRequest): BookSource {
         require(siteConfigs.containsKey(request.siteConfigId)) { "siteConfigId not found" }
+        require(request.updateIntervalMinutes > 0) { "updateIntervalMinutes must be positive" }
         val source = BookSource(
             siteConfigId = request.siteConfigId,
             bookTitle = request.bookTitle,
@@ -40,6 +41,29 @@ class CrawlingPipelineService(
         )
         bookSources[source.id] = source
         return source
+    }
+
+    fun markBookSourceChecked(bookSourceId: String, checkedAtEpochMinutes: Long): BookSource {
+        val source = bookSources.getValue(bookSourceId)
+        val updated = source.copy(lastCheckedAtEpochMinutes = checkedAtEpochMinutes)
+        bookSources[bookSourceId] = updated
+        return updated
+    }
+
+    fun scheduleLatestCrawls(nowEpochMinutes: Long): List<PipelineTask> {
+        val dueSources = bookSources.values.filter { source ->
+            val lastCheckedAt = source.lastCheckedAtEpochMinutes
+            lastCheckedAt == null || nowEpochMinutes - lastCheckedAt >= source.updateIntervalMinutes
+        }
+        return dueSources.map { source ->
+            val task = PipelineTask(
+                type = PipelineTaskType.CRAWL_LATEST,
+                status = PipelineTaskStatus.CREATED,
+                targetId = source.id,
+            )
+            tasks += task
+            task
+        }
     }
 
     fun crawlBook(bookSourceId: String, html: String): PipelineTask {

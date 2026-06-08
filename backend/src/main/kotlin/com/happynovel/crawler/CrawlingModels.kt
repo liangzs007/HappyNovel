@@ -37,6 +37,7 @@ data class BookSource(
     val bookTitle: String,
     val sourceUrl: String,
     val updateIntervalMinutes: Int,
+    val lastCheckedAtEpochMinutes: Long? = null,
 )
 
 data class ChapterLink(
@@ -102,4 +103,8 @@ data class PipelineTask(
 
 data class TriggerCrawlRequest(
     val html: String,
+)
+
+data class ScheduleLatestCrawlsRequest(
+    val nowEpochMinutes: Long,
 )
