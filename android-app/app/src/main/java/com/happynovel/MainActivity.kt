@@ -6,8 +6,11 @@ import android.view.Gravity
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import com.happynovel.reader.InMemoryReaderLocalRepository
+import com.happynovel.reader.ReaderAppCoordinator
+import com.happynovel.reader.ReaderLaunchTextModelFactory
 import com.happynovel.reader.ReaderRemoteDataSourceFactory
-import com.happynovel.reader.ReaderLaunchStateFactory
+import com.happynovel.reader.ReaderScreenLoader
 
 class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -16,30 +19,24 @@ class MainActivity : Activity() {
     }
 
     private fun buildContent(): ScrollView {
-        val launchState = ReaderLaunchStateFactory.create(
-            remoteDataSource = ReaderRemoteDataSourceFactory.create(BuildConfig.HAPPYNOVEL_API_BASE_URL),
+        val remoteDataSource = ReaderRemoteDataSourceFactory.create(BuildConfig.HAPPYNOVEL_API_BASE_URL)
+        val loader = ReaderScreenLoader(
+            ReaderAppCoordinator(remoteDataSource, InMemoryReaderLocalRepository()),
         )
+        val textModel = ReaderLaunchTextModelFactory.create(loader)
 
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(40, 48, 40, 48)
         }
 
-        content.addView(title(launchState.home.title))
-        launchState.home.sections.forEach { section ->
+        content.addView(title(textModel.title))
+        textModel.sections.forEach { section ->
             content.addView(sectionTitle(section.title))
-            section.books.forEach { content.addView(body("${it.title}\n${it.author}\n${it.latestChapterTitle}")) }
+            if (section.body.isNotBlank()) {
+                content.addView(body(section.body))
+            }
         }
-        content.addView(sectionTitle(launchState.categories.title))
-        content.addView(body(launchState.categories.categories.joinToString { it.name }))
-        content.addView(sectionTitle("Book Detail"))
-        content.addView(body("${launchState.bookDetail.title}\n${launchState.bookDetail.primaryAction}\n${launchState.bookDetail.chapterCountLabel}"))
-        content.addView(sectionTitle(launchState.chapterCatalog.title))
-        launchState.chapterCatalog.chapters.forEach { content.addView(body("${it.order}. ${it.title}")) }
-        content.addView(sectionTitle("Reader Preview"))
-        content.addView(body(launchState.reader.title))
-        launchState.reader.paragraphs.forEach { content.addView(body(it)) }
-        content.addView(sectionTitle(launchState.home.bottomTabs.joinToString("   ") { it.label }))
 
         return ScrollView(this).apply {
             addView(content)
