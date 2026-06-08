@@ -42,6 +42,16 @@ if [ "${RUN_API_SMOKE:-0}" = "1" ]; then
   curl -fsS -X PUT "$API_BASE_URL/api/admin/compliance/ad-config" \
     -H "Content-Type: application/json" \
     -d '{"enabled":true,"readerBannerEnabled":true,"interstitialEveryChapters":5}' >/dev/null
+  site_response="$(curl -fsS -X POST "$API_BASE_URL/api/admin/crawling/sites" \
+    -H "Content-Type: application/json" \
+    -d '{"name":"Smoke 站点","baseDomain":"https://novels.example.com","rateLimitPerMinute":30,"maxConcurrency":2,"chapterListSelector":".chapter-list a","chapterBodySelector":".chapter-content","adBlocklist":["请收藏本站","最新网址"]}')"
+  site_id="$(printf '%s' "$site_response" | sed -E 's/.*"id":"([^"]+)".*/\1/')"
+  curl -fsS -X POST "$API_BASE_URL/api/admin/crawling/book-sources" \
+    -H "Content-Type: application/json" \
+    -d "{\"siteConfigId\":\"$site_id\",\"bookTitle\":\"Smoke 小说\",\"sourceUrl\":\"https://novels.example.com/book/smoke\",\"updateIntervalMinutes\":360}" >/dev/null
+  curl -fsS -X POST "$API_BASE_URL/api/admin/crawling/tasks/schedule-latest" \
+    -H "Content-Type: application/json" \
+    -d '{"nowEpochMinutes":1000}' >/dev/null
   curl -fsS "$API_BASE_URL/api/admin/glossary/pending?bookId=$SMOKE_BOOK_ID" >/dev/null
   pending_response="$(curl -fsS -X POST "$API_BASE_URL/api/admin/glossary/pending" \
     -H "Content-Type: application/json" \
