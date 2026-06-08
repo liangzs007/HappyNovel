@@ -27,6 +27,7 @@ import com.happynovel.reader.ReaderRemoteDataSourceFactory
 import com.happynovel.reader.ReaderScreenLoader
 import com.happynovel.reader.ReaderUiState
 import com.happynovel.reader.ScreenLoadState
+import com.happynovel.reader.ReaderTheme
 import java.io.File
 
 class MainActivity : Activity() {
@@ -168,10 +169,22 @@ class MainActivity : Activity() {
         renderLoadState(
             state = loader.reader(bookId, chapterId),
             onContent = { reader ->
-                addView(header(reader.title, "${reader.fontSizeLabel} · ${reader.progressLabel}"))
-                addView(sectionCard("Reader") {
+                addView(header(reader.title, "${reader.fontSizeLabel} · ${reader.progressLabel} · ${reader.themeLabel()}"))
+                addView(readerCard(reader) {
+                    addView(actionButton("A-") {
+                        coordinator.decreaseFontSize()
+                        render()
+                    })
+                    addView(actionButton("A+") {
+                        coordinator.increaseFontSize()
+                        render()
+                    })
+                    addView(actionButton(reader.themeActionLabel()) {
+                        coordinator.toggleTheme()
+                        render()
+                    })
                     reader.paragraphs.forEach { paragraph ->
-                        addView(body(paragraph))
+                        addView(readerParagraph(paragraph, reader.fontSizeSp, reader.theme))
                     }
                     addView(actionButton("Mark Chapter Read") {
                         coordinator.updateReadingProgress(bookId, chapterId, 1f)
@@ -242,10 +255,29 @@ class MainActivity : Activity() {
         contentBuilder()
     }
 
-    private fun sectionTitle(text: String): TextView = TextView(this).apply {
+    private fun readerCard(reader: ReaderUiState, contentBuilder: LinearLayout.() -> Unit): LinearLayout = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        setPadding(dp(16), dp(14), dp(16), dp(14))
+        background = roundedBackground(
+            color = if (reader.theme == ReaderTheme.DARK) Color.rgb(28, 34, 44) else Color.WHITE,
+            radius = dp(8),
+            strokeColor = if (reader.theme == ReaderTheme.DARK) Color.rgb(62, 72, 88) else Color.rgb(226, 231, 237),
+        )
+        layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+        ).apply {
+            topMargin = dp(14)
+        }
+        addView(sectionTitle("Reader", reader.theme))
+        addView(divider())
+        contentBuilder()
+    }
+
+    private fun sectionTitle(text: String, theme: ReaderTheme = ReaderTheme.LIGHT): TextView = TextView(this).apply {
         this.text = text
         textSize = 18f
-        setTextColor(Color.rgb(24, 31, 42))
+        setTextColor(if (theme == ReaderTheme.DARK) Color.rgb(241, 245, 249) else Color.rgb(24, 31, 42))
         typeface = Typeface.DEFAULT_BOLD
         setPadding(0, 0, 0, dp(8))
     }
@@ -256,6 +288,14 @@ class MainActivity : Activity() {
         setTextColor(Color.rgb(55, 65, 81))
         setLineSpacing(4f, 1f)
         setPadding(0, dp(10), 0, 0)
+    }
+
+    private fun readerParagraph(text: String, fontSizeSp: Int, theme: ReaderTheme): TextView = TextView(this).apply {
+        this.text = text
+        textSize = fontSizeSp.toFloat()
+        setTextColor(if (theme == ReaderTheme.DARK) Color.rgb(230, 232, 236) else Color.rgb(55, 65, 81))
+        setLineSpacing(6f, 1.15f)
+        setPadding(0, dp(12), 0, 0)
     }
 
     private fun bookRow(book: BookSummary): TextView = TextView(this).apply {
@@ -380,4 +420,8 @@ class MainActivity : Activity() {
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
+    private fun ReaderUiState.themeLabel(): String = if (theme == ReaderTheme.DARK) "Dark" else "Light"
+
+    private fun ReaderUiState.themeActionLabel(): String = if (theme == ReaderTheme.DARK) "Light Mode" else "Dark Mode"
 }

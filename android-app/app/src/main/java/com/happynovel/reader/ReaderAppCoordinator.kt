@@ -115,11 +115,41 @@ class ReaderAppCoordinator(
         )
     }
 
+    fun increaseFontSize() {
+        updateSettings { current ->
+            current.withFontSize((current.fontSizeSp + FONT_SIZE_STEP_SP).coerceAtMost(MAX_FONT_SIZE_SP))
+        }
+    }
+
+    fun decreaseFontSize() {
+        updateSettings { current ->
+            current.withFontSize((current.fontSizeSp - FONT_SIZE_STEP_SP).coerceAtLeast(MIN_FONT_SIZE_SP))
+        }
+    }
+
+    fun toggleTheme() {
+        updateSettings { current ->
+            current.withTheme(
+                if (current.theme == ReaderTheme.LIGHT) ReaderTheme.DARK else ReaderTheme.LIGHT,
+            )
+        }
+    }
+
     fun readerState(bookId: String, chapterId: String): ReaderScreenState = ReaderScreenState(
         chapter = localRepository.cachedChapter(chapterId),
         settings = localRepository.settings(),
         progress = localRepository.bookshelf().progressFor(bookId),
     )
+
+    private fun updateSettings(transform: (ReaderSettings) -> ReaderSettings) {
+        localRepository.updateSettings(transform(localRepository.settings()))
+    }
+
+    private companion object {
+        const val MIN_FONT_SIZE_SP = 14
+        const val MAX_FONT_SIZE_SP = 28
+        const val FONT_SIZE_STEP_SP = 2
+    }
 }
 
 private fun BookDetailState.toBookSummary(): BookSummary = BookSummary(

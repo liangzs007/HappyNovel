@@ -67,6 +67,8 @@ data class ChapterRowUiState(
 data class ReaderUiState(
     val title: String,
     val paragraphs: List<String>,
+    val fontSizeSp: Int,
+    val theme: ReaderTheme,
     val fontSizeLabel: String,
     val progressLabel: String,
 )
@@ -135,6 +137,8 @@ object ReaderUiStateFactory {
     fun reader(readerState: ReaderScreenState): ReaderUiState = ReaderUiState(
         title = readerState.chapter?.title ?: "This chapter is unavailable.",
         paragraphs = readerState.chapter?.paragraphs ?: emptyList(),
+        fontSizeSp = readerState.settings.fontSizeSp,
+        theme = readerState.settings.theme,
         fontSizeLabel = "${readerState.settings.fontSizeSp}sp",
         progressLabel = "${((readerState.progress?.percent ?: 0f) * 100).roundToInt()}%",
     )

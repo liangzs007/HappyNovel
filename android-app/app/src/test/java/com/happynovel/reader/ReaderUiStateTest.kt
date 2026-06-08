@@ -107,6 +107,8 @@ class ReaderUiStateTest {
 
         assertEquals("Chapter 1", uiState.title)
         assertEquals(listOf("First paragraph."), uiState.paragraphs)
+        assertEquals(20, uiState.fontSizeSp)
+        assertEquals(ReaderTheme.LIGHT, uiState.theme)
         assertEquals("20sp", uiState.fontSizeLabel)
         assertEquals("40%", uiState.progressLabel)
     }

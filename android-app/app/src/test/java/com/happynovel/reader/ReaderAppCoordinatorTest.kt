@@ -124,6 +124,36 @@ class ReaderAppCoordinatorTest {
         val state = coordinator.readerState("book-seed-1", "chapter-seed-1")
         assertEquals(1f, state.progress?.percent)
     }
+
+    @Test
+    fun `reader settings actions update font size within bounds`() {
+        val localRepository = InMemoryReaderLocalRepository()
+        val coordinator = ReaderAppCoordinator(
+            remoteDataSource = FakeReaderRemoteDataSource(),
+            localRepository = localRepository,
+        )
+
+        repeat(20) { coordinator.increaseFontSize() }
+        assertEquals(28, localRepository.settings().fontSizeSp)
+
+        repeat(40) { coordinator.decreaseFontSize() }
+        assertEquals(14, localRepository.settings().fontSizeSp)
+    }
+
+    @Test
+    fun `reader settings action toggles light and dark theme`() {
+        val localRepository = InMemoryReaderLocalRepository()
+        val coordinator = ReaderAppCoordinator(
+            remoteDataSource = FakeReaderRemoteDataSource(),
+            localRepository = localRepository,
+        )
+
+        coordinator.toggleTheme()
+        assertEquals(ReaderTheme.DARK, localRepository.settings().theme)
+
+        coordinator.toggleTheme()
+        assertEquals(ReaderTheme.LIGHT, localRepository.settings().theme)
+    }
 }
 
 private class FakeReaderRemoteDataSource : ReaderRemoteDataSource {
