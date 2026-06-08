@@ -2,6 +2,8 @@ package com.happynovel.reader
 
 data class ReaderLaunchTextModel(
     val title: String,
+    val bottomTabs: List<NavigationTab>,
+    val bookListFilterLabel: String,
     val sections: List<ReaderTextSection>,
 )
 
@@ -16,9 +18,17 @@ object ReaderLaunchTextModelFactory {
         bookId: String = "book-seed-1",
         chapterId: String = "chapter-seed-1",
     ): ReaderLaunchTextModel {
+        val bookListCategory = "fantasy"
+        val bookListStatus = "ongoing"
+        val bookListSort = "popular"
         val home = loader.home()
         val categories = loader.categories()
-        val books = loader.books(category = "fantasy", status = "ongoing", sort = "popular", limit = 12)
+        val books = loader.books(
+            category = bookListCategory,
+            status = bookListStatus,
+            sort = bookListSort,
+            limit = 12,
+        )
         val detail = loader.bookDetail(bookId)
         val catalog = loader.chapterCatalog(bookId)
         val reader = loader.reader(bookId, chapterId)
@@ -26,6 +36,8 @@ object ReaderLaunchTextModelFactory {
 
         return ReaderLaunchTextModel(
             title = homeContent?.title ?: "HappyNovel",
+            bottomTabs = homeContent?.bottomTabs ?: ReaderNavigation.primaryTabs,
+            bookListFilterLabel = "${bookListCategory.replaceFirstChar { it.uppercase() }} / $bookListStatus / $bookListSort",
             sections = buildList {
                 if (homeContent == null) {
                     add(ReaderTextSection("Home", home.message))

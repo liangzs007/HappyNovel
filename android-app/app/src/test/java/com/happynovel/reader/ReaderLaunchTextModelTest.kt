@@ -14,6 +14,8 @@ class ReaderLaunchTextModelTest {
         )
 
         assertEquals("HappyNovel", model.title)
+        assertEquals(listOf("Home", "Categories", "Bookshelf"), model.bottomTabs.map { it.label })
+        assertEquals("Fantasy / ongoing / popular", model.bookListFilterLabel)
         assertTrue(model.sections.any { it.title == "Recommended" })
         assertTrue(model.sections.any { it.body.contains("Dragon Gate") })
         assertTrue(model.sections.any { it.title == "Book List" && it.body.contains("Dragon Gate") })
