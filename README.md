@@ -99,6 +99,14 @@ JDBC 模式本地后端可以直接使用：
 
 该脚本会默认启用内容、后台配置、审计、术语、发布控制和阅读事件的 JDBC 模式，并读取 `DATABASE_URL`、`DATABASE_USERNAME`、`DATABASE_PASSWORD`。
 
+如需开启自动增量抓取调度，可设置：
+
+```bash
+CRAWLING_SCHEDULER_ENABLED=true CRAWLING_SCHEDULER_FIXED_DELAY_MS=60000 ./scripts/run_backend_jdbc.sh
+```
+
+调度器会按书籍来源的 `updateIntervalMinutes` 生成 `CRAWL_LATEST` 任务，并跳过已有待执行的同书籍来源任务。
+
 API smoke 会检查首页、广告配置、合规配置、后台广告配置保存、匿名设备创建和阅读事件上报。
 
 ## 文档

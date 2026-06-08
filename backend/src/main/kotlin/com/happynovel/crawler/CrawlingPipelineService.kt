@@ -53,7 +53,8 @@ class CrawlingPipelineService(
     fun scheduleLatestCrawls(nowEpochMinutes: Long): List<PipelineTask> {
         val dueSources = bookSources.values.filter { source ->
             val lastCheckedAt = source.lastCheckedAtEpochMinutes
-            lastCheckedAt == null || nowEpochMinutes - lastCheckedAt >= source.updateIntervalMinutes
+            val isDue = lastCheckedAt == null || nowEpochMinutes - lastCheckedAt >= source.updateIntervalMinutes
+            isDue && !hasOpenLatestCrawlTask(source.id)
         }
         return dueSources.map { source ->
             val task = PipelineTask(
@@ -65,6 +66,13 @@ class CrawlingPipelineService(
             task
         }
     }
+
+    private fun hasOpenLatestCrawlTask(bookSourceId: String): Boolean =
+        tasks.any {
+            it.type == PipelineTaskType.CRAWL_LATEST &&
+                it.targetId == bookSourceId &&
+                it.status in setOf(PipelineTaskStatus.CREATED, PipelineTaskStatus.RUNNING)
+        }
 
     fun crawlBook(bookSourceId: String, html: String): PipelineTask {
         return executeCrawlBook(

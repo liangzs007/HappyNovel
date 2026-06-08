@@ -86,6 +86,20 @@ class CrawlingPipelineTest {
     }
 
     @Test
+    fun `scheduled latest crawl does not duplicate pending source tasks`() {
+        val service = CrawlingPipelineService()
+        val site = service.createSiteConfig(defaultSiteRequest())
+        val source = service.createBookSource(defaultBookSource(site.id))
+
+        val firstRun = service.scheduleLatestCrawls(nowEpochMinutes = 1_000)
+        val secondRun = service.scheduleLatestCrawls(nowEpochMinutes = 1_001)
+
+        assertEquals(listOf(source.id), firstRun.map { it.targetId })
+        assertEquals(emptyList(), secondRun)
+        assertEquals(1, service.tasks().count { it.type == PipelineTaskType.CRAWL_LATEST && it.targetId == source.id })
+    }
+
+    @Test
     fun `parser extracts chapter links and body content`() {
         val parser = NovelHtmlParser()
 

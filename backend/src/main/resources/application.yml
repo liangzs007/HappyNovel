@@ -26,6 +26,10 @@ app:
     repository-mode: ${PUBLICATION_REPOSITORY_MODE:SEED}
   reading:
     repository-mode: ${READING_REPOSITORY_MODE:SEED}
+  crawling:
+    scheduler:
+      enabled: ${CRAWLING_SCHEDULER_ENABLED:false}
+      fixed-delay-ms: ${CRAWLING_SCHEDULER_FIXED_DELAY_MS:60000}
 
 openai:
   api-key: ${OPENAI_API_KEY:}
