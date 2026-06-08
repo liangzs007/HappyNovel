@@ -42,6 +42,14 @@ if [ "${RUN_API_SMOKE:-0}" = "1" ]; then
   curl -fsS -X PUT "$API_BASE_URL/api/admin/compliance/ad-config" \
     -H "Content-Type: application/json" \
     -d '{"enabled":true,"readerBannerEnabled":true,"interstitialEveryChapters":5}' >/dev/null
+  curl -fsS "$API_BASE_URL/api/admin/glossary/pending?bookId=$SMOKE_BOOK_ID" >/dev/null
+  pending_response="$(curl -fsS -X POST "$API_BASE_URL/api/admin/glossary/pending" \
+    -H "Content-Type: application/json" \
+    -d "{\"bookId\":\"$SMOKE_BOOK_ID\",\"chapterId\":\"$SMOKE_CHAPTER_ID\",\"sourceTerm\":\"林辰\",\"suggestedTranslation\":\"Lin Chen\",\"occurrenceCount\":2}")"
+  pending_id="$(printf '%s' "$pending_response" | sed -E 's/.*"id":"([^"]+)".*/\1/')"
+  curl -fsS -X POST "$API_BASE_URL/api/admin/glossary/pending/$pending_id/confirm" \
+    -H "Content-Type: application/json" \
+    -d '{"translatedTerm":"Lin Chen","type":"PERSON","description":"Smoke 测试术语"}' >/dev/null
   device_id="$(curl -fsS -X POST "$API_BASE_URL/api/app/devices/anonymous" | sed -E 's/.*"deviceId":"([^"]+)".*/\1/')"
   curl -fsS -X POST "$API_BASE_URL/api/app/reading-events" \
     -H "Content-Type: application/json" \
